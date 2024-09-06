@@ -1,8 +1,8 @@
 type 
   Gate = ref object
     id: int
-    # inputs: tuple[Gate, Gate]
-    # outputs: seq[Gate]
+    inputs: seq[Gate]
+    outputs: seq[Gate]
     value: int
 
 # proc nand(g: Gate): bool
