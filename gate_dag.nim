@@ -1,10 +1,11 @@
 type Gate = ref object
   id: int
-  inputs: seq[Gate]
+  input_a: Gate
+  input_b: Gate
   outputs: seq[Gate]
   value: int
 
 proc nand(g: Gate): bool =
-  g.value = not (g.inputs[0].value and g.inputs[1].value)
+  g.value = not (g.input_a.value and g.input_b.value)
 
-# compile with `nim c -r gate_dag.nim`
+# compile with `nim c -r --hints:off gate_dag.nim`
