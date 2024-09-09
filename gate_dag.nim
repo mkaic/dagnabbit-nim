@@ -3,17 +3,11 @@
 
 # compile with `nim c -r --hints:off gate_dag.nim`
 type
-  NodeKind = enum
-    nkInput,
-    nkOutput,
-    nkGate
-
   Node = ref object
-    kind: NodeKind
     id: int
     value: bool
-    inputs: seq[Node]
-    outputs: seq[Node]
+    evaluated: bool
+    inputs: seq[Node] = @[]
 
   Graph = object
     inputs: seq[Node]
