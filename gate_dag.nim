@@ -1,22 +1,43 @@
 # import std/sequtils
 # import std/sugar
+from std/tables import TableRef
 
 # compile with `nim c -r --hints:off gate_dag.nim`
 type
-  Node = ref object
-    id: int
+
+  Input = ref object
+    id: string
+    value: bool
+
+  Gate = ref object
+    id: string
     value: bool
     evaluated: bool
-    inputs: seq[Node] = @[]
+    inputs: array[2, string]
+    outputs: seq[string]
 
   Graph = object
-    inputs: seq[Node]
-    outputs: seq[Node]
-    gates: seq[Node]
+    inputs: TableRef[string, Input]
+    outputs: TableRef[string, Gate]
+    gates: TableRef[string, Gate]
 
-proc nand(self: Node) =
-  assert self.kind == nkGate, "nand can only be called on Nodes"
-  self.value = not (self.inputs[0].value and self.inputs[1].value)
+var test_graph: Graph = Graph()
 
-proc add_gate(self: Graph) =
-  let possible_inputs = self.inputs & self.gates
+test_graph.inputs["i0"] = Input(id: "i0", value: true)
+test_graph.inputs["i1"] = Input(id: "i1", value: true)
+
+test_graph.gates["g0"] = Gate(
+  id: "g0",
+  value: false,
+  evaluated: false,
+  inputs: ["i0", "i1"],
+  outputs: @["o0"], 
+  )
+
+test_graph.outputs["o0"] = Gate(
+  id: "o0",
+  value: false,
+  evaluated: false,
+  inputs: ["g0", "g0"],
+  outputs: @[],
+  )
