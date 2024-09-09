@@ -1,10 +1,10 @@
 # import std/sequtils
 # import std/sugar
-from std/tables import TableRef
+import std/tables
+import std/strformat
 
 # compile with `nim c -r --hints:off gate_dag.nim`
 type
-
   Input = ref object
     id: string
     value: bool
@@ -17,14 +17,20 @@ type
     outputs: seq[string]
 
   Graph = object
-    inputs: TableRef[string, Input]
-    outputs: TableRef[string, Gate]
-    gates: TableRef[string, Gate]
+    global_counter: int = 0
+    inputs: Table[string, Input] = initTable[string, Input]()
+    outputs: Table[string, Gate] = initTable[string, Gate]()
+    gates: Table[string, Gate] = initTable[string, Gate]()
 
-var test_graph: Graph = Graph()
+proc add_input(self: var Graph) =
+  var node_id = &"i{self.global_counter}"
+  self.inputs[node_id] = Input(id: node_id, value: false)
+  self.global_counter += 1
 
-test_graph.inputs["i0"] = Input(id: "i0", value: true)
-test_graph.inputs["i1"] = Input(id: "i1", value: true)
+var test_graph = Graph()
+
+test_graph.add_input()
+test_graph.add_input()
 
 test_graph.gates["g0"] = Gate(
   id: "g0",
