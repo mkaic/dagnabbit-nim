@@ -1,5 +1,8 @@
 # import std/sequtils
 import std/sugar
+import std/random
+
+randomize()
 
 # compile with `nim c -r --hints:off gate_dag.nim`
 type
@@ -36,16 +39,6 @@ proc reset(graph: var Graph) =
 proc add_input(graph: var Graph, value: bool) =
   graph.inputs.add(Gate(value: value, evaluated: true))
 
-proc add_gate(graph: var Graph, inputs: array[2, Gate],
-    is_output: bool = false) =
-  var g = Gate(inputs: inputs)
-  for i in inputs:
-    i.outputs.add(g)
-
-  if is_output:
-    graph.outputs.add(g)
-  else:
-    graph.gates.add(g)
 
 proc get_descendants(gate: Gate, known: var seq[Gate]): seq[Gate] =
   for o in gate.outputs:
@@ -59,21 +52,35 @@ proc get_descendants(gate: Gate): seq[Gate] =
   var known = newSeq[Gate]()
   return get_descendants(gate, known = known)
 
+proc init_gate(graph: var Graph, output: bool = false) = 
+  
+  let available_graph_inputs = graph.inputs & graph.gates
+  var gate_inputs: array[2, Gate]
+  for i in 0..1:
+    gate_inputs[i] = available_graph_inputs[rand(available_graph_inputs.len - 1)]
+
+  var g = Gate(inputs: gate_inputs)
+
+  for i in gate_inputs:
+    i.outputs.add(g)
+
+  if output:
+    graph.outputs.add(g)
+  else:
+    graph.gates.add(g)
+
+
 var test_graph = Graph()
 
 const input_values = [true, false, false, true, false, false, true, true]
 for i in input_values:
   test_graph.add_input(i)
 
-test_graph.add_gate(inputs = [test_graph.inputs[0], test_graph.inputs[1]])
-test_graph.add_gate(inputs = [test_graph.inputs[1], test_graph.inputs[1]])
+for i in 1..20:
+  test_graph.init_gate()
 
-test_graph.add_gate(inputs = [test_graph.inputs[0], test_graph.gates[0]],
-    is_output = true)
+for i in 1..3:
+  test_graph.init_gate(output = true)
 
 let outputs = test_graph.evaluate_graph()
 echo outputs
-
-let children = get_descendants(test_graph.inputs[0])
-for c in children:
-  echo c.value
