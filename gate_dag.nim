@@ -36,8 +36,8 @@ proc reset*(graph: var Graph) =
   for g in graph.outputs:
     g.evaluated = false
 
-proc add_input*(graph: var Graph, value: bool) =
-  graph.inputs.add(Gate(value: value, evaluated: true))
+proc add_input*(graph: var Graph) =
+  graph.inputs.add(Gate(value: true, evaluated: true))
 
 
 # proc get_ancestors(gate: Gate, known: var seq[Gate]): seq[Gate] =
@@ -68,3 +68,18 @@ proc init_gate*(graph: var Graph, output: bool = false) =
     graph.outputs.add(g)
   else:
     graph.gates.add(g)
+
+proc set_inputs*(graph: var Graph, input_values: seq[bool]) =
+  for i, v in input_values:
+    graph.inputs[i].value = v
+
+proc int_to_bool_seq*(i: int, bits: int): seq[bool] =
+  return collect(newSeq):
+    for b in 0 ..< bits: (i and (1 shl b)) > 0
+
+proc bool_seq_to_int*(seq: seq[bool]): int =
+  var output = 0
+  for i, v in seq:
+    if v:
+      output = output or (1 shl i)
+  return output
