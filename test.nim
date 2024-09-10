@@ -1,4 +1,8 @@
 import ./gate_dag
+import pixie as pix
+
+let branos = pix.read_image("branos.png")
+echo branos
 
 var test_graph = Graph()
 
