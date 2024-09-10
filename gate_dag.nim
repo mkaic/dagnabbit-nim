@@ -1,13 +1,14 @@
 # import std/sequtils
 import std/sugar
 import std/random
+import std/bitops
 
 randomize()
 
 # compile with `nim c -r --hints:off gate_dag.nim`
 type
   Gate = ref object
-    value: bool
+    value: uint64
     evaluated: bool
     inputs: array[2, Gate]
     outputs: seq[Gate]
@@ -17,10 +18,14 @@ type
     gates: seq[Gate]
     outputs: seq[Gate]
 
-proc evaluate_gate*(gate: Gate): bool =
+proc evaluate_gate*(gate: Gate): uint64 =
   if not gate.evaluated:
-    gate.value = not (gate.inputs[0].evaluate_gate() and gate.inputs[
-        1].evaluate_gate())
+    gate.value = bit_not(
+      bit_and(
+        gate.inputs[0].evaluate_gate(), 
+        gate.inputs[1].evaluate_gate()
+      )
+    )
     gate.evaluated = true
 
   return gate.value
