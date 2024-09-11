@@ -4,6 +4,7 @@ import std/strformat
 import std/sequtils
 import std/deques
 import std/math
+import weave
 
 var branos = pix.read_image("branos.png")
 
