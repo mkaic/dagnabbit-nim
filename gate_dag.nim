@@ -9,7 +9,7 @@ import pixie as pix
 randomize()
 
 type
-  Gate = ref object
+  Gate* = ref object
     value: int64
     evaluated: bool
     inputs: array[2, Gate]

@@ -1,17 +1,21 @@
 import ./gate_dag
 import pixie as pix
 import std/strformat
-import progress
+import std/sequtils
+import std/deques
+import std/math
 
 var branos = pix.read_image("branos.png")
 
 const
-  width = 64
-  height = 64
+  width = 128
+  height = 128
   channels = 3
-  layer_size = 8
-  lookback = 512
-  layers = 512
+  layer_size = 32
+  lookback = layer_size * 4
+  layers = 4096 div layer_size
+  n_mutations = 1
+  deque_len = 50
 
 
 branos = branos.resize(width, height)
@@ -31,11 +35,15 @@ graph.init_gates(8, output = true, last = lookback)
 echo &"Graph has {graph.gates.len} gates"
 
 var error = 255.0
+var improved: seq[int8]
 
-var bar = newProgressBar()
-bar.start()
 for i in 1..10_000:
-  var (gate, old_inputs) = graph.stage_mutation(last = 16)
+  var gate_cache: seq[Gate]
+  var old_inputs_cache: seq[array[2, Gate]]
+  for i in 1..n_mutations:
+    var (g, i) = graph.stage_mutation(last = lookback)
+    gate_cache.add(g)
+    old_inputs_cache.add(i)
 
   var outputs: seq[seq[int64]]
   for batch in batches:
@@ -53,13 +61,21 @@ for i in 1..10_000:
   let candidate_error = calculate_mae(branos, output_image)
 
   if candidate_error < error:
+    error = candidate_error
     output_image.write_file(&"outputs/{i:04}.png")
     output_image.write_file(&"latest.png")
-  if candidate_error <= error:
-    error = candidate_error
-    
+    improved.add(1)
+    let improvement_rate = math.sum[int8](improved).float64 /
+        improved.len.float64
+    echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}"
+  elif candidate_error == error:
+    improved.add(0)
   else:
-    gate.undo_mutation(old_inputs)
+    improved.add(0)
+    for (gate, old_inputs) in zip(gate_cache, old_inputs_cache):
+      gate.undo_mutation(old_inputs)
 
-  progress.set(bar, (i.float / 10_000.0 * 100.0).int32)
-bar.finish()
+  if improved.len > deque_len:
+    improved.del(0)
+
+
