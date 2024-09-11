@@ -2,9 +2,7 @@ import ./gate_dag
 import pixie as pix
 import std/strformat
 import std/sequtils
-import std/deques
 import std/math
-import weave
 
 var branos = pix.read_image("branos.png")
 
@@ -12,26 +10,29 @@ const
   width = 128
   height = 128
   channels = 3
-  layer_size = 32
-  lookback = layer_size * 4
-  layers = 4096 div layer_size
+  gates = 256
+  lookback = gates div 8
   n_mutations = 1
   deque_len = 50
 
 
 branos = branos.resize(width, height)
 
-let (batches, bitcount) = make_bitpacked_int64_batches(height = height,
-    width = width, channels = channels)
+let (batches, bitcount) = make_bitpacked_int64_batches(
+  height = height,
+  width = width, 
+  channels = channels
+  )
 
 echo bitcount
 var graph = Graph()
 
 graph.add_inputs(bitcount)
 for i in 0 ..< layers:
-  graph.init_gates(layer_size, last = lookback)
+  graph.add_random_gate(layer_size, last = lookback)
 
-graph.init_gates(8, output = true, last = lookback)
+for i in 0 ..< output_bitcount:
+  graph.add_random_gate(8, output = true, last = lookback)
 
 echo &"Graph has {graph.gates.len} gates"
 
@@ -46,11 +47,10 @@ for i in 1..10_000:
     gate_cache.add(g)
     old_inputs_cache.add(i)
 
-  var outputs: seq[seq[int64]]
-  for batch in batches:
-    graph.set_inputs(batch)
-    outputs.add(graph.evaluate_graph())
-    graph.reset()
+  var outputs: seq[int64] # len = 8 * num_batches
+  for batch_idx in 0 ..< batches.len div bitcount:
+    let batch = batches[batch_idx * bitcount ..< (batch_idx + 1) * bitcount]
+    outputs &= graph.eval(batch)
 
   let output_image = unpack_int64_outputs_to_pixie(
     outputs,

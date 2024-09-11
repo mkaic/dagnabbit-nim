@@ -18,58 +18,55 @@ type
     inputs: seq[Gate]
     gates*: seq[Gate]
     outputs: seq[Gate]
+    evaluated_gates: seq[Gate]
 
-proc evaluate_gate*(gate: Gate): int64 =
+proc eval*(gate: Gate): int64 =
   if not gate.evaluated:
     gate.value = bit_not(
       bit_and(
-        gate.inputs[0].evaluate_gate(),
-        gate.inputs[1].evaluate_gate()
+        gate.inputs[0].eval(),
+        gate.inputs[1].eval()
       )
     )
     gate.evaluated = true
 
   return gate.value
 
-proc evaluate_graph*(self: var Graph): seq[int64] =
-  return collect(newSeq):
-    for o in self.outputs:
-      o.evaluate_gate()
-
-proc reset*(graph: var Graph) =
+proc eval*(graph: var Graph, input_values: seq[int64]): seq[int64] =
   for g in graph.gates:
     g.evaluated = false
   for g in graph.outputs:
     g.evaluated = false
 
+  for i, v in input_values:
+    graph.inputs[i].value = v
+
+  var output = collect(newSeq):
+    for o in graph.outputs:
+      o.eval()
+
+  graph.evaluated_gates = newSeq[Gate]()
+  for g in graph.gates:
+    if g.evaluated:
+      graph.evaluated_gates.add(g)
+
+  return output
+
 proc add_inputs*(graph: var Graph, n: int) =
   for _ in 0 ..< n:
     graph.inputs.add(Gate(value: 0'i64, evaluated: true))
 
-
-# proc get_ancestors(gate: Gate, known: var seq[Gate]): seq[Gate] =
-#   for o in gate.inputs:
-#     if o notin known:
-#       known.add(o)
-#       discard get_ancestors(o, known = known)
-#   return known
-
-# # This overloads the first get_ancestors proc and tells it what to do if "known" isn't passed.
-# proc get_ancestors(gate: Gate): seq[Gate] =
-#   var known = newSeq[Gate]()
-#   return get_ancestors(gate, known = known)
-
-proc init_gates*(
+proc add_random_gate*(
   graph: var Graph,
   num_gates: int,
-  last: int = 0,
+  lookback: int = 0,
   output: bool = false
   ) =
 
   var available_graph_inputs = graph.inputs & graph.gates
 
-  if last > 0 and graph.gates.len >= last:
-    available_graph_inputs = available_graph_inputs[^last..^1]
+  if lookback > 0 and graph.gates.len >= lookback:
+    available_graph_inputs = available_graph_inputs[^lookback..^1]
 
   for _ in 0 ..< num_gates:
     var gate_inputs: array[2, Gate]
@@ -83,10 +80,6 @@ proc init_gates*(
     else:
       graph.gates.add(g)
 
-proc set_inputs*(graph: var Graph, input_values: seq[int64]) =
-  for i, v in input_values:
-    graph.inputs[i].value = v
-
 func int64_to_binchar_seq(i: int64, bits: int): seq[char] =
   return collect(newSeq):
     for c in to_bin(i, bits): c
@@ -94,77 +87,69 @@ func int64_to_binchar_seq(i: int64, bits: int): seq[char] =
 func binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
-func transpose[T](matrix: seq[seq[T]]): seq[seq[T]] =
-  let rowsize = matrix[0].len
-
-  return collect(newSeq):
-    for i in 0 ..< rowsize:
-      collect(newSeq):
-        for row in matrix:
-          row[i]
-
 func make_bitpacked_int64_batches*(
   height: int,
   width: int,
   channels: int
-  ): (seq[seq[int64]], int) =
+  ): (seq[int64], int) =
 
   let
-    x_bitcount = fast_log_2(width) + 1
-    y_bitcount = fast_log_2(height) + 1
-    c_bitcount = fast_log_2(channels) + 1
-    pos_bitcount = x_bitcount + y_bitcount + c_bitcount
+    x_bitcount: int = fast_log_2(width) + 1
+    y_bitcount: int = fast_log_2(height) + 1
+    c_bitcount: int = fast_log_2(channels) + 1
+    pos_bitcount: int = x_bitcount + y_bitcount + c_bitcount
 
-    y_as_bits = collect(newSeq):
+    y_as_bits: seq[seq[char]] = collect(newSeq):
       for y in 0 ..< height:
         y.int64_to_binchar_seq(bits = y_bitcount)
 
-    x_as_bits = collect(newSeq):
+    x_as_bits: seq[seq[char]] = collect(newSeq):
       for x in 0 ..< width:
         x.int64_to_binchar_seq(bits = x_bitcount)
 
-    c_as_bits = collect(newSeq):
+    c_as_bits: seq[seq[char]] = collect(newSeq):
       for c in 0 ..< channels:
         c.int64_to_binchar_seq(bits = c_bitcount)
 
     total_iterations = width * height * channels
     batch_count = (total_iterations + 1) div 64
 
-  var batches: seq[seq[int64]]
-  for batch_idx in 0 ..< batch_count:
+  var batches: seq[int64]
+  for batch_number in 0 ..< batch_count:
 
-    var batch_of_pos_bits: seq[seq[char]]
-    for i in 0 ..< 64:
+    var one_64stack_of_pos_bits: seq[seq[char]]
+    for intra_batch_idx in 0 ..< 64:
       # it's alright if c, y, or x are out of bounds because they are moduloed, so they'll
       # just wrap around to the beginning again, meaning any extra work done will just be
       # duplicate work on the first few pixels
+      let 
+        idx: int = batch_number * 64 + intra_batch_idx
+        c: int = idx div (height * width) mod channels
+        y: int = idx div (width) mod height
+        x: int = idx div (1) mod width
+
       let
-        idx = batch_idx * 64 + i
-        c = idx div (height * width) mod channels
-        y = idx div (width) mod height
-        x = idx div (1) mod width
+        x_bits: seq[char] = x_as_bits[x]
+        y_bits: seq[char] = y_as_bits[y]
+        c_bits: seq[char] = c_as_bits[c]
 
-        x_bits = x_as_bits[x]
-        y_bits = y_as_bits[y]
-        c_bits = c_as_bits[c]
+      let pos_bits: seq[char] = x_bits & y_bits & c_bits
 
-      batch_of_pos_bits.add(x_bits & y_bits & c_bits)
+      one_64stack_of_pos_bits.add(pos_bits)
 
-    let batch: seq[int64] = collect(newSeq):
-      for bits in batch_of_pos_bits.transpose():
-        bits.binchar_seq_to_int64()
-
-    batches.add(batch)
+    var batch: seq[int64]
+    for bit_idx in 0 ..< pos_bitcount:
+      var int64_bits: seq[char]
+      for pos_bits in one_64stack_of_pos_bits:
+        int64_bits.add(pos_bits[bit_idx])
+      batch.add(int64_bits.binchar_seq_to_int64())
+    
+    batches &= batch
 
   return (batches, pos_bitcount)
 
-func concat_seqs[T](seqs: seq[seq[T]]): seq[T] =
-  return collect(newSeq):
-    for s in seqs:
-      for e in s: e
-
 func unpack_int64_outputs_to_pixie*(
-  outputs: seq[seq[int64]], # seq(batches)[seq(8)[int64]]
+  outputs: seq[int64], # seq(batches)[seq(8)[int64]]
   height: int,
   width: int,
   channels: int
