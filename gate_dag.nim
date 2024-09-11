@@ -80,25 +80,24 @@ proc add_random_gate*(
     else:
       graph.gates.add(g)
 
-func int64_to_binchar_seq(i: int64, bits: int): seq[char] =
+proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
   return collect(newSeq):
     for c in to_bin(i, bits): c
 
-func binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
+proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
-func make_bitpacked_int64_batches*(
+proc make_bitpacked_int64_batches*(
   height: int,
   width: int,
-  channels: int
-  ): (seq[int64], int) =
+  channels: int,
+  x_bitcount: int,
+  y_bitcount: int,
+  c_bitcount: int,
+  pos_bitcount: int,
+  ): seq[int64] =
 
   let
-    x_bitcount: int = fast_log_2(width) + 1
-    y_bitcount: int = fast_log_2(height) + 1
-    c_bitcount: int = fast_log_2(channels) + 1
-    pos_bitcount: int = x_bitcount + y_bitcount + c_bitcount
-
     y_as_bits: seq[seq[char]] = collect(newSeq):
       for y in 0 ..< height:
         y.int64_to_binchar_seq(bits = y_bitcount)
@@ -146,9 +145,9 @@ func make_bitpacked_int64_batches*(
     
     batches &= batch
 
-  return (batches, pos_bitcount)
+  return batches
 
-func unpack_int64_outputs_to_pixie*(
+proc unpack_int64_outputs_to_pixie*(
   outputs: seq[int64], # seq(batches)[seq(8)[int64]]
   height: int,
   width: int,
@@ -179,7 +178,7 @@ func unpack_int64_outputs_to_pixie*(
 
   return output_image
 
-func calculate_mae*(
+proc calculate_mae*(
   image1: pix.Image,
   image2: pix.Image
   ): float64 =
