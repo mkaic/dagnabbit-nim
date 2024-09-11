@@ -9,9 +9,9 @@ const
   width = 64
   height = 64
   channels = 3
-  layer_size = 1024
-  lookback = 2048
-  layers = 16
+  layer_size = 8
+  lookback = 512
+  layers = 512
 
 
 branos = branos.resize(width, height)
@@ -34,7 +34,7 @@ var error = 255.0
 
 var bar = newProgressBar()
 bar.start()
-for i in 1..1024:
+for i in 1..10_000:
   var (gate, old_inputs) = graph.stage_mutation(last = 16)
 
   var outputs: seq[seq[int64]]
@@ -53,11 +53,13 @@ for i in 1..1024:
   let candidate_error = calculate_mae(branos, output_image)
 
   if candidate_error < error:
-    error = candidate_error
     output_image.write_file(&"outputs/{i:04}.png")
     output_image.write_file(&"latest.png")
+  if candidate_error <= error:
+    error = candidate_error
+    
   else:
     gate.undo_mutation(old_inputs)
 
-  progress.set(bar, (i.float / 1024.0 * 100.0).int32)
+  progress.set(bar, (i.float / 10_000.0 * 100.0).int32)
 bar.finish()
