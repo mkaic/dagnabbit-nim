@@ -24,7 +24,7 @@ proc evaluate_gate*(gate: Gate): int64 =
   if not gate.evaluated:
     gate.value = bit_not(
       bit_and(
-        gate.inputs[0].evaluate_gate(), 
+        gate.inputs[0].evaluate_gate(),
         gate.inputs[1].evaluate_gate()
       )
     )
@@ -60,9 +60,15 @@ proc add_inputs*(graph: var Graph, n: int) =
 #   var known = newSeq[Gate]()
 #   return get_ancestors(gate, known = known)
 
-proc init_gates*(graph: var Graph, num_gates:int, output: bool = false) =
+proc init_gates*(graph: var Graph, num_gates: int, last: int = 0,
+    output: bool = false) =
 
-  let available_graph_inputs = graph.inputs & graph.gates
+  var available_graph_inputs: seq[Gate]
+
+  if last > 0 and graph.gates.len >= last:
+    available_graph_inputs = graph.inputs & graph.gates[^last..^1]
+  else:
+    available_graph_inputs = graph.inputs & graph.gates
 
   for _ in 0 ..< num_gates:
     var gate_inputs: array[2, Gate]
@@ -83,14 +89,14 @@ proc set_inputs*(graph: var Graph, input_values: seq[int64]) =
   for i, v in input_values:
     graph.inputs[i].value = v
 
-proc int64_to_binchar_seq*(i: int64, bits: int): seq[char] =
+func int64_to_binchar_seq(i: int64, bits: int): seq[char] =
   return collect(newSeq):
     for c in to_bin(i, bits): c
 
-proc binchar_seq_to_int64*(binchar_seq: seq[char]): int64 =
+func binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
-proc transpose*[T](matrix: seq[seq[T]]): seq[seq[T]] =
+func transpose[T](matrix: seq[seq[T]]): seq[seq[T]] =
   let rowsize = matrix[0].len
 
   return collect(newSeq):
@@ -99,9 +105,9 @@ proc transpose*[T](matrix: seq[seq[T]]): seq[seq[T]] =
         for row in matrix:
           row[i]
 
-proc make_bitpacked_int64_batches*(
-  height: int, 
-  width: int, 
+func make_bitpacked_int64_batches*(
+  height: int,
+  width: int,
   channels: int
   ): (seq[seq[int64]], int) =
 
@@ -113,15 +119,15 @@ proc make_bitpacked_int64_batches*(
 
     y_as_bits = collect(newSeq):
       for y in 0 ..< height:
-        y.int64_to_binchar_seq(bits=y_bitcount)
+        y.int64_to_binchar_seq(bits = y_bitcount)
 
     x_as_bits = collect(newSeq):
       for x in 0 ..< width:
-        x.int64_to_binchar_seq(bits=x_bitcount)
+        x.int64_to_binchar_seq(bits = x_bitcount)
 
     c_as_bits = collect(newSeq):
       for c in 0 ..< channels:
-        c.int64_to_binchar_seq(bits=c_bitcount)
+        c.int64_to_binchar_seq(bits = c_bitcount)
 
     total_iterations = width * height * channels
     batch_count = (total_iterations + 1) div 64
@@ -134,7 +140,7 @@ proc make_bitpacked_int64_batches*(
       # it's alright if c, y, or x are out of bounds because they are moduloed, so they'll
       # just wrap around to the beginning again, meaning any extra work done will just be
       # duplicate work on the first few pixels
-      let 
+      let
         idx = batch_idx * 64 + i
         c = idx div (height * width) mod channels
         y = idx div (width) mod height
@@ -154,15 +160,15 @@ proc make_bitpacked_int64_batches*(
 
   return (batches, pos_bitcount)
 
-proc concat_seqs*[T](seqs: seq[seq[T]]): seq[T] =
+func concat_seqs[T](seqs: seq[seq[T]]): seq[T] =
   return collect(newSeq):
     for s in seqs:
       for e in s: e
 
-proc unpack_int64_outputs_to_pixie*(
+func unpack_int64_outputs_to_pixie*(
   outputs: seq[seq[int64]], # seq(batches)[seq(8)[int64]]
-  height: int, 
-  width: int, 
+  height: int,
+  width: int,
   channels: int
   ): pix.Image =
 
@@ -170,7 +176,7 @@ proc unpack_int64_outputs_to_pixie*(
     for t in outputs:
       collect(newSeq):
         for b in t:
-          b.int64_to_binchar_seq(bits=64) # seq(batches)[seq(8)[seq(64)[char]]]
+          b.int64_to_binchar_seq(bits = 64) # seq(batches)[seq(8)[seq(64)[char]]]
 
   let batch_by_64_by_8 = as_binchar_seqs.map(transpose) # seq(batches)[seq(64)[seq(8)[char]]]
   let flattened = batch_by_64_by_8.concat_seqs() # seq(num_pixels)[seq(8)[char]]
