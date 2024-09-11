@@ -6,8 +6,8 @@ import std/sugar
 var branos = pix.read_image("branos.png")
 
 const 
-  width = 128
-  height = 128
+  width = 64
+  height = 64
   channels = 3
 
 branos = branos.resize(width, height)
@@ -16,7 +16,13 @@ let (batches, bitcount) = make_bitpacked_int64_batches(height=height, width=widt
 
 echo bitcount
 var graph = Graph()
-graph.init_as_reconstructor(input_size=bitcount, output_size=8, num_gates=1024)
+
+graph.add_inputs(bitcount)
+
+for i in 0..64:
+  graph.init_gates(64)
+
+graph.init_gates(8, output = true)
 
 var outputs: seq[seq[int64]]
 for batch in batches:
@@ -24,8 +30,9 @@ for batch in batches:
   outputs.add(graph.evaluate_graph())
   graph.reset()
 
-let output_image = unpack_int64_outputs_to_pixie(outputs, height=height, width=width, channels=channels)
+var output_image = unpack_int64_outputs_to_pixie(outputs, height=height, width=width, channels=channels)
 
+output_image = output_image.resize(1024, 1024)
 output_image.write_file("output_image.png")
 
 #       rgb[c] = cast[uint8](output.bool_seq_to_int())

@@ -43,8 +43,9 @@ proc reset*(graph: var Graph) =
   for g in graph.outputs:
     g.evaluated = false
 
-proc add_input*(graph: var Graph) =
-  graph.inputs.add(Gate(value: 0'i64, evaluated: true))
+proc add_inputs*(graph: var Graph, n: int) =
+  for _ in 0 ..< n:
+    graph.inputs.add(Gate(value: 0'i64, evaluated: true))
 
 
 # proc get_ancestors(gate: Gate, known: var seq[Gate]): seq[Gate] =
@@ -59,22 +60,24 @@ proc add_input*(graph: var Graph) =
 #   var known = newSeq[Gate]()
 #   return get_ancestors(gate, known = known)
 
-proc init_gate*(graph: var Graph, output: bool = false) =
+proc init_gates*(graph: var Graph, num_gates:int, output: bool = false) =
 
   let available_graph_inputs = graph.inputs & graph.gates
-  var gate_inputs: array[2, Gate]
-  for i in 0..1:
-    gate_inputs[i] = available_graph_inputs[rand(available_graph_inputs.len - 1)]
 
-  var g = Gate(inputs: gate_inputs)
+  for _ in 0 ..< num_gates:
+    var gate_inputs: array[2, Gate]
+    for i in 0..1:
+      gate_inputs[i] = available_graph_inputs[rand(available_graph_inputs.len - 1)]
 
-  for i in gate_inputs:
-    i.outputs.add(g)
+    var g = Gate(inputs: gate_inputs)
 
-  if output:
-    graph.outputs.add(g)
-  else:
-    graph.gates.add(g)
+    for i in gate_inputs:
+      i.outputs.add(g)
+
+    if output:
+      graph.outputs.add(g)
+    else:
+      graph.gates.add(g)
 
 proc set_inputs*(graph: var Graph, input_values: seq[int64]) =
   for i, v in input_values:
@@ -150,16 +153,6 @@ proc make_bitpacked_int64_batches*(
     batches.add(batch)
 
   return (batches, pos_bitcount)
-
-proc init_as_reconstructor*(graph: var Graph, input_size: int, output_size: int, num_gates: int) =
-  for i in 0 ..< input_size:
-    graph.add_input()
-
-  for i in 0 ..< num_gates:
-    graph.init_gate()
-
-  for i in 0 ..< output_size:
-    graph.init_gate(output = true)
 
 proc concat_seqs*[T](seqs: seq[seq[T]]): seq[T] =
   return collect(newSeq):
