@@ -1,7 +1,7 @@
 import ./gate_dag
 import pixie as pix
-# import std/strformat
-import std/sugar
+import std/strformat
+import progress
 
 var branos = pix.read_image("branos.png")
 
@@ -9,6 +9,10 @@ const
   width = 64
   height = 64
   channels = 3
+  layer_size = 1024
+  lookback = 2048
+  layers = 16
+
 
 branos = branos.resize(width, height)
 
@@ -19,32 +23,41 @@ echo bitcount
 var graph = Graph()
 
 graph.add_inputs(bitcount)
-for i in 0 ..< 64:
-  graph.init_gates(64, last = 64)
+for i in 0 ..< layers:
+  graph.init_gates(layer_size, last = lookback)
 
-graph.init_gates(8, output = true, last = 64)
+graph.init_gates(8, output = true, last = lookback)
 
+echo &"Graph has {graph.gates.len} gates"
 
-var outputs: seq[seq[int64]]
-for batch in batches:
-  graph.set_inputs(batch)
-  outputs.add(graph.evaluate_graph())
-  graph.reset()
+var error = 255.0
 
-var output_image = unpack_int64_outputs_to_pixie(outputs, height = height,
-    width = width, channels = channels)
+var bar = newProgressBar()
+bar.start()
+for i in 1..1024:
+  var (gate, old_inputs) = graph.stage_mutation(last = 16)
 
-output_image = output_image.resize(1024, 1024)
-output_image.write_file("output_image.png")
+  var outputs: seq[seq[int64]]
+  for batch in batches:
+    graph.set_inputs(batch)
+    outputs.add(graph.evaluate_graph())
+    graph.reset()
 
-#       rgb[c] = cast[uint8](output.bool_seq_to_int())
+  let output_image = unpack_int64_outputs_to_pixie(
+    outputs,
+    height = height,
+    width = width,
+    channels = channels
+    )
 
-#     result_image.unsafe[x, y] = pix.rgba(rgb[0], rgb[1], rgb[2], 255)
+  let candidate_error = calculate_mae(branos, output_image)
 
-#     let
-#       rgbx = branos.unsafe[x, y]
-#       r = rgbx.r # these are uint8
-#       g = rgbx.g
-#       b = rgbx.b
+  if candidate_error < error:
+    error = candidate_error
+    output_image.write_file(&"outputs/{i:04}.png")
+    output_image.write_file(&"latest.png")
+  else:
+    gate.undo_mutation(old_inputs)
 
-# result_image.write_file("output_image.png")
+  progress.set(bar, (i.float / 1024.0 * 100.0).int32)
+bar.finish()

@@ -13,11 +13,10 @@ type
     value: int64
     evaluated: bool
     inputs: array[2, Gate]
-    outputs: seq[Gate]
 
   Graph* = object
     inputs: seq[Gate]
-    gates: seq[Gate]
+    gates*: seq[Gate]
     outputs: seq[Gate]
 
 proc evaluate_gate*(gate: Gate): int64 =
@@ -60,15 +59,17 @@ proc add_inputs*(graph: var Graph, n: int) =
 #   var known = newSeq[Gate]()
 #   return get_ancestors(gate, known = known)
 
-proc init_gates*(graph: var Graph, num_gates: int, last: int = 0,
-    output: bool = false) =
+proc init_gates*(
+  graph: var Graph,
+  num_gates: int,
+  last: int = 0,
+  output: bool = false
+  ) =
 
-  var available_graph_inputs: seq[Gate]
+  var available_graph_inputs = graph.inputs & graph.gates
 
   if last > 0 and graph.gates.len >= last:
-    available_graph_inputs = graph.inputs & graph.gates[^last..^1]
-  else:
-    available_graph_inputs = graph.inputs & graph.gates
+    available_graph_inputs = available_graph_inputs[^last..^1]
 
   for _ in 0 ..< num_gates:
     var gate_inputs: array[2, Gate]
@@ -76,9 +77,6 @@ proc init_gates*(graph: var Graph, num_gates: int, last: int = 0,
       gate_inputs[i] = available_graph_inputs[rand(available_graph_inputs.len - 1)]
 
     var g = Gate(inputs: gate_inputs)
-
-    for i in gate_inputs:
-      i.outputs.add(g)
 
     if output:
       graph.outputs.add(g)
@@ -195,3 +193,48 @@ func unpack_int64_outputs_to_pixie*(
       output_image.unsafe[x, y] = pix.rgba(rgb[0], rgb[1], rgb[2], 255)
 
   return output_image
+
+func calculate_mae*(
+  image1: pix.Image,
+  image2: pix.Image
+  ): float64 =
+
+  var error = 0
+  for y in 0 ..< image1.height:
+    for x in 0 ..< image1.width:
+      let rgb1 = image1.unsafe[x, y]
+      let rgb2 = image2.unsafe[x, y]
+      error += abs(rgb1.r.int - rgb2.r.int)
+      error += abs(rgb1.g.int - rgb2.g.int)
+      error += abs(rgb1.b.int - rgb2.b.int)
+
+  return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
+
+
+proc stage_mutation*(graph: var Graph, last: int): (Gate, array[2, Gate]) =
+  let available_gates = graph.gates & graph.outputs
+  let random_idx = rand(0..<available_gates.len)
+  var g = available_gates[random_idx]
+
+  let total_idx = (graph.inputs.len - 1) + random_idx
+  var available_inputs = graph.inputs & graph.gates & graph.outputs
+  # echo ""
+  # echo available_inputs.len
+  # echo total_idx
+  # echo graph.inputs.len - 1
+  # echo random_idx
+
+  available_inputs = available_inputs[0..<total_idx]
+
+  if last > 0 and available_inputs.len >= last:
+    available_inputs = available_inputs[^last..^1]
+
+  let old_inputs = g.inputs
+  for i in 0..1:
+    g.inputs[i] = available_inputs[rand(available_inputs.len - 1)]
+
+  return (g, old_inputs)
+
+proc undo_mutation*(gate: Gate, old_inputs: array[2, Gate]) =
+  for i in 0..1:
+    gate.inputs[i] = old_inputs[i]
