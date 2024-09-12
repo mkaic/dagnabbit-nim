@@ -71,12 +71,12 @@ proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate]) =
     gate.inputs[i] = sample(available_inputs)
 
 proc add_input*(graph: var Graph) =
-  graph.inputs.add(Gate(value: 0'i64, evaluated: true))
+  graph.inputs.add(Gate(evaluated: true))
 
 proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
   assert graph.gates.len == 0, "Outputs must be added before gates"
-  let g = Gate(value: 0'i64, evaluated: false)
+  let g = Gate(evaluated: false)
   choose_random_gate_inputs(g, graph.inputs)
   graph.outputs.add(g)
 
@@ -259,13 +259,12 @@ proc calculate_mae*(
 
   return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
 
+proc select_random_gate*(graph: Graph): Gate =
+  return sample(graph.gates & graph.outputs)
 
-proc stage_mutation*(graph: var Graph) =
-  let available_gates = graph.gates & graph.outputs
-  graph.mutated_gate = sample(available_gates)
+proc stage_mutation*(gate: var Gate) =
+  gate.function_cache = gate.function
+  gate.function = rand(GateFunc.low..GateFunc.high)
 
-  graph.mutated_gate.function_cache = graph.mutated_gate.function
-  graph.mutated_gate.function = rand(GateFunc.low..GateFunc.high)
-
-proc undo_mutation*(graph: var Graph) =
-  graph.mutated_gate.function = graph.mutated_gate.function_cache
+proc undo_mutation*(gate: var Gate) =
+  gate.function = gate.function_cache

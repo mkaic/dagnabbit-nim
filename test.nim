@@ -17,8 +17,8 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 512
-  lookback = 128
+  num_gates = 2048
+  lookback = num_gates div 16
   improvement_deque_len = 50
 
 echo x_bitcount
@@ -27,6 +27,7 @@ echo c_bitcount
 echo input_bitcount
 
 branos = branos.resize(width, height)
+branos.write_file("original.png")
 
 var graph = Graph()
 
@@ -58,7 +59,9 @@ let bitpacked_inputs = pack_int64_batches(
 )
 
 for i in 1..10_000:
-  graph.stage_mutation()
+  var random_gate = graph.select_random_gate()
+  random_gate.stage_mutation()
+
   let bitpacked_outputs: seq[seq[int64]] = graph.eval(bitpacked_inputs)
   let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)[
       0..<height*width*channels]
@@ -86,7 +89,7 @@ for i in 1..10_000:
     improved.add(0)
   else:
     improved.add(0)
-    graph.undo_mutation()
+    random_gate.undo_mutation()
 
   if improved.len > improvement_deque_len:
     improved.delete(0)
