@@ -3,7 +3,6 @@ import std/sugar
 import std/random
 import std/bitops
 import std/strutils
-import std/sequtils
 import pixie as pix
 
 randomize()
@@ -18,7 +17,9 @@ type
     inputs: seq[Gate]
     gates*: seq[Gate]
     outputs: seq[Gate]
-    evaluated_gates: seq[Gate]
+    mutated_gate: Gate
+    unmutated_inputs_cache: array[2, Gate]
+
 
 proc eval*(gate: Gate): int64 =
   if not gate.evaluated:
@@ -32,53 +33,50 @@ proc eval*(gate: Gate): int64 =
 
   return gate.value
 
-proc eval*(graph: var Graph, input_values: seq[int64]): seq[int64] =
+proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
   for g in graph.gates:
     g.evaluated = false
   for g in graph.outputs:
     g.evaluated = false
 
-  for i, v in input_values:
-    graph.inputs[i].value = v
+  var output: seq[seq[int64]]
+  for batch in batched_inputs:
+    for i in 0 ..< graph.inputs.len:
+      graph.inputs[i].value = batch[i]
 
-  var output = collect(newSeq):
+    var batch_output: seq[int64]
     for o in graph.outputs:
-      o.eval()
-
-  graph.evaluated_gates = newSeq[Gate]()
-  for g in graph.gates:
-    if g.evaluated:
-      graph.evaluated_gates.add(g)
+      batch_output.add(o.eval())
+    output.add(batch_output)
 
   return output
 
-proc add_inputs*(graph: var Graph, n: int) =
-  for _ in 0 ..< n:
-    graph.inputs.add(Gate(value: 0'i64, evaluated: true))
+proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate])=
+  for i in 0..1:
+    gate.inputs[i] = available_inputs[rand(available_inputs.len - 1)]
+
+proc add_input*(graph: var Graph) =
+  graph.inputs.add(Gate(value: 0'i64, evaluated: true))
+
+proc add_output*(graph: var Graph) =
+  assert graph.inputs.len > 0, "Inputs must be added before outputs"
+  assert graph.gates.len == 0, "Outputs must be added before gates"
+  let g = Gate(value: 0'i64, evaluated: false)
+  choose_random_gate_inputs(g, graph.inputs)
+  graph.outputs.add(g)
 
 proc add_random_gate*(
   graph: var Graph,
-  num_gates: int,
   lookback: int = 0,
-  output: bool = false
   ) =
-
   var available_graph_inputs = graph.inputs & graph.gates
 
   if lookback > 0 and graph.gates.len >= lookback:
     available_graph_inputs = available_graph_inputs[^lookback..^1]
 
-  for _ in 0 ..< num_gates:
-    var gate_inputs: array[2, Gate]
-    for i in 0..1:
-      gate_inputs[i] = available_graph_inputs[rand(available_graph_inputs.len - 1)]
-
-    var g = Gate(inputs: gate_inputs)
-
-    if output:
-      graph.outputs.add(g)
-    else:
-      graph.gates.add(g)
+  let g = Gate(value: 0'i64, evaluated: false)
+  choose_random_gate_inputs(g, available_graph_inputs)
+  graph.gates.add(g)
 
 proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
   return collect(newSeq):
@@ -87,7 +85,7 @@ proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
 proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
-proc make_bitpacked_int64_batches*(
+proc make_inputs*(
   height: int,
   width: int,
   channels: int,
@@ -95,7 +93,8 @@ proc make_bitpacked_int64_batches*(
   y_bitcount: int,
   c_bitcount: int,
   pos_bitcount: int,
-  ): seq[int64] =
+  ): seq[seq[char]] = 
+  # returns seq(h*w*c)[seq(input_bitcount)[char]]
 
   let
     y_as_bits: seq[seq[char]] = collect(newSeq):
@@ -111,69 +110,91 @@ proc make_bitpacked_int64_batches*(
         c.int64_to_binchar_seq(bits = c_bitcount)
 
     total_iterations = width * height * channels
-    batch_count = (total_iterations + 1) div 64
 
-  var batches: seq[int64]
-  for batch_number in 0 ..< batch_count:
+  var input_values: seq[seq[char]]
+  for idx in 0 ..< total_iterations:
+    let
+      c: int = idx div (height * width) mod channels
+      y: int = idx div (width) mod height
+      x: int = idx div (1) mod width
 
-    var one_64stack_of_pos_bits: seq[seq[char]]
+    let
+      x_bits: seq[char] = x_as_bits[x]
+      y_bits: seq[char] = y_as_bits[y]
+      c_bits: seq[char] = c_as_bits[c]
+
+    let pos_bits: seq[char] = x_bits & y_bits & c_bits
+    input_values.add(pos_bits)
+  return input_values
+
+proc transpose_2d[T](matrix: seq[seq[T]]): seq[seq[T]] =
+  let 
+    dim0: int = matrix.len
+    dim1: int = matrix[0].len
+
+  var transposed: seq[seq[T]]
+  for i in 0 ..< dim1:
+    var row: seq[T]
+    for j in 0 ..< dim0:
+      row.add(matrix[j][i])
+    transposed.add(row)
+  return transposed
+
+proc pack_int64_batches*(unbatched: seq[seq[char]], bitcount: int): seq[seq[int64]] =
+  # seq(h*w*c)[seq(input_bitcount)[char]] -> seq(num_batches)[seq(bitcount)[int64]]
+  var num_batches: int = unbatched.len div 64 + 1
+  var batches: seq[seq[int64]]
+  for batch_number in 0 ..< num_batches:
+    var char_batch: seq[seq[char]] # will have shape seq(64)[seq(input_bitcount)[char]]
     for intra_batch_idx in 0 ..< 64:
-      # it's alright if c, y, or x are out of bounds because they are moduloed, so they'll
-      # just wrap around to the beginning again, meaning any extra work done will just be
-      # duplicate work on the first few pixels
-      let 
-        idx: int = batch_number * 64 + intra_batch_idx
-        c: int = idx div (height * width) mod channels
-        y: int = idx div (width) mod height
-        x: int = idx div (1) mod width
+      let idx: int = (batch_number * 64 + intra_batch_idx) mod unbatched.len
+      let single_input: seq[char] = unbatched[idx]
+      char_batch.add(single_input)
 
-      let
-        x_bits: seq[char] = x_as_bits[x]
-        y_bits: seq[char] = y_as_bits[y]
-        c_bits: seq[char] = c_as_bits[c]
+    var int64_batch: seq[int64] # will have shape seq(bitcount)[int64]
+    for stack_of_bits in char_batch.transpose_2d(): # seq(input_bitcount)[seq(64)[char]]
+      int64_batch.add(binchar_seq_to_int64(stack_of_bits))
 
-      let pos_bits: seq[char] = x_bits & y_bits & c_bits
-
-      one_64stack_of_pos_bits.add(pos_bits)
-
-    var batch: seq[int64]
-    for bit_idx in 0 ..< pos_bitcount:
-      var int64_bits: seq[char]
-      for pos_bits in one_64stack_of_pos_bits:
-        int64_bits.add(pos_bits[bit_idx])
-      batch.add(int64_bits.binchar_seq_to_int64())
-    
-    batches &= batch
-
+    batches.add(int64_batch)
   return batches
 
-proc unpack_int64_outputs_to_pixie*(
-  outputs: seq[int64], # seq(batches)[seq(8)[int64]]
+
+proc unpack_int64_batches*(batched: seq[seq[int64]]): seq[seq[char]] =
+  # seq(num_batches)[seq(output_bitcount)[int64]] -> seq(h*w*c)[seq(output_bitcount)[char]]
+  var unbatched: seq[seq[char]] # will have shape seq(h*w*c)[seq(output_bitcount)[char]]
+  for batch in batched: # seq(output_bitcount)[int64]
+    var char_batch: seq[seq[char]] # will have shape seq(output_bitcount)[seq(64)[char]]
+    for int64_input in batch: # int64
+      char_batch.add(int64_input.int64_to_binchar_seq(bits = 64))
+    unbatched &= char_batch.transpose_2d() # seq(64)[seq(output_bitcount)[char]]
+
+  return unbatched
+
+
+proc outputs_to_pixie_image*(
+  outputs: seq[seq[char]], # seq(h*w*c)[seq(output_bitcount)[char]]
   height: int,
   width: int,
   channels: int
   ): pix.Image =
 
-  let as_binchar_seqs = collect(newSeq):
-    for t in outputs:
-      collect(newSeq):
-        for b in t:
-          b.int64_to_binchar_seq(bits = 64) # seq(batches)[seq(8)[seq(64)[char]]]
-
-  let batch_by_64_by_8 = as_binchar_seqs.map(transpose) # seq(batches)[seq(64)[seq(8)[char]]]
-  let flattened = batch_by_64_by_8.concat_seqs() # seq(num_pixels)[seq(8)[char]]
-  let as_uint8 = collect(newSeq):
-    for f in flattened:
-      cast[uint8](f.binchar_seq_to_int64())
+  var as_uint8: seq[uint8]
+  for stack_of_bits in outputs:
+    as_uint8.add(
+      cast[uint8](
+        binchar_seq_to_int64(stack_of_bits)
+        )
+      )
 
   var output_image = pix.new_image(width, height)
 
   for y in 0 ..< height:
     for x in 0 ..< width:
-      let rgb = collect(newSeq):
-        for c in 0 ..< channels:
-          let idx = (c * height * width) + (y * width) + x
-          as_uint8[idx]
+      var rgb: array[3, uint8]
+      for c in 0 ..< channels:
+        let idx = (c * height * width) + (y * width) + x
+        rgb[c] = as_uint8[idx]
+
       output_image.unsafe[x, y] = pix.rgba(rgb[0], rgb[1], rgb[2], 255)
 
   return output_image
@@ -195,30 +216,27 @@ proc calculate_mae*(
   return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
 
 
-proc stage_mutation*(graph: var Graph, last: int): (Gate, array[2, Gate]) =
+proc stage_mutation*(graph: var Graph, lookback: int) =
   let available_gates = graph.gates & graph.outputs
   let random_idx = rand(0..<available_gates.len)
-  var g = available_gates[random_idx]
+  var gate = available_gates[random_idx]
 
   let total_idx = (graph.inputs.len - 1) + random_idx
   var available_inputs = graph.inputs & graph.gates & graph.outputs
-  # echo ""
-  # echo available_inputs.len
-  # echo total_idx
-  # echo graph.inputs.len - 1
-  # echo random_idx
 
   available_inputs = available_inputs[0..<total_idx]
 
-  if last > 0 and available_inputs.len >= last:
-    available_inputs = available_inputs[^last..^1]
+  if lookback > 0 and available_inputs.len >= lookback:
+    available_inputs = available_inputs[^lookback..^1]
 
-  let old_inputs = g.inputs
+  let old_inputs = gate.inputs
   for i in 0..1:
-    g.inputs[i] = available_inputs[rand(available_inputs.len - 1)]
+    gate.inputs[i] = available_inputs[rand(available_inputs.len - 1)]
 
-  return (g, old_inputs)
+  graph.mutated_gate = gate
+  graph.unmutated_inputs_cache = old_inputs
 
-proc undo_mutation*(gate: Gate, old_inputs: array[2, Gate]) =
+proc undo_mutation*(graph: var Graph) =
+  var gate = graph.mutated_gate
   for i in 0..1:
-    gate.inputs[i] = old_inputs[i]
+    gate.inputs[i] = graph.unmutated_inputs_cache[i]

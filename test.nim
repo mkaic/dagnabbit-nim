@@ -18,23 +18,11 @@ const
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
 
-  gates = 256
-  lookback = gates div 8
-  mutations_per_step = 1
+  num_gates = 256
+  lookback = 0
   improvement_deque_len = 50
 
-
 branos = branos.resize(width, height)
-
-let batches = make_bitpacked_int64_batches(
-  height = height,
-  width = width, 
-  channels = channels,
-  x_bitcount = x_bitcount,
-  y_bitcount = y_bitcount,
-  c_bitcount = c_bitcount,
-  pos_bitcount = input_bitcount
-  )
 
 var graph = Graph()
 
@@ -51,20 +39,27 @@ echo &"Graph has {graph.gates.len} gates"
 var error = 255.0
 var improved: seq[int8]
 
+let inputs: seq[seq[char]] = make_inputs(
+  height = height,
+  width = width,
+  channels = channels,
+  x_bitcount = x_bitcount,
+  y_bitcount = y_bitcount,
+  c_bitcount = c_bitcount,
+  pos_bitcount = input_bitcount
+  )
+
+let bitpacked_inputs = pack_int64_batches(
+  unbatched=inputs,
+  bitcount=input_bitcount
+)
+
 for i in 1..10_000:
-  var gate_cache: seq[Gate]
-  var old_inputs_cache: seq[array[2, Gate]]
-  for i in 1..mutations_per_step:
-    var (g, i) = graph.stage_mutation(last = lookback)
-    gate_cache.add(g)
-    old_inputs_cache.add(i)
+  graph.stage_mutation(lookback=lookback)
+  let bitpacked_outputs = graph.eval(bitpacked_inputs)
+  let outputs = unpack_int64_batches(bitpacked_outputs)
 
-  var outputs: seq[int64] # len = 8 * num_batches
-  for batch_idx in 0 ..< batches.len div bitcount:
-    let batch = batches[batch_idx * bitcount ..< (batch_idx + 1) * bitcount]
-    outputs &= graph.eval(batch)
-
-  let output_image = unpack_int64_outputs_to_pixie(
+  let output_image = outputs_to_pixie_image(
     outputs,
     height = height,
     width = width,
@@ -75,7 +70,7 @@ for i in 1..10_000:
 
   if candidate_error < error:
     error = candidate_error
-    output_image.write_file(&"outputs/{i:04}.png")
+    # output_image.write_file(&"outputs/{i:04}.png")
     output_image.write_file(&"latest.png")
     improved.add(1)
     let improvement_rate = math.sum[int8](improved).float64 /
@@ -85,8 +80,7 @@ for i in 1..10_000:
     improved.add(0)
   else:
     improved.add(0)
-    for (gate, old_inputs) in zip(gate_cache, old_inputs_cache):
-      gate.undo_mutation(old_inputs)
+    graph.undo_mutation()
 
   if improved.len > improvement_deque_len:
     improved.del(0)
