@@ -8,8 +8,8 @@ import std/strutils
 var branos = pix.read_image("branos.png")
 
 const
-  width = 8
-  height = 8
+  width = 32
+  height = 32
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -18,8 +18,8 @@ const
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
 
-  num_gates = 1024
-  lookback = 1
+  num_gates = 32
+  lookback = 32
   improvement_deque_len = 50
 
 echo x_bitcount
