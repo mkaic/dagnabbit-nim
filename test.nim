@@ -8,8 +8,8 @@ import std/strutils
 var branos = pix.read_image("branos.png")
 
 const
-  width = 8
-  height = 8
+  width = 64
+  height = 64
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -17,9 +17,8 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-
-  num_gates = 32
-  lookback = 32
+  num_gates = 1024
+  lookback = 0
   improvement_deque_len = 50
 
 echo x_bitcount
@@ -62,7 +61,7 @@ let bitpacked_inputs = pack_int64_batches(
 )
 
 for i in 1..10_000:
-  # graph.stage_mutation(lookback=lookback)
+  graph.stage_mutation(lookback=lookback)
   let bitpacked_outputs: seq[seq[int64]] = graph.eval(bitpacked_inputs)
   let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)[
       0..<height*width*channels]
@@ -77,7 +76,7 @@ for i in 1..10_000:
 
   if candidate_error < error:
     error = candidate_error
-    # output_image.write_file(&"outputs/{i:04}.png")
+    output_image.write_file(&"outputs/{i:06}.png")
     output_image.write_file(&"latest.png")
     improved.add(1)
     let improvement_rate = math.sum[int8](improved).float64 /
@@ -87,7 +86,7 @@ for i in 1..10_000:
     improved.add(0)
   else:
     improved.add(0)
-    # graph.undo_mutation()
+    graph.undo_mutation()
 
   if improved.len > improvement_deque_len:
     improved.delete(0)
