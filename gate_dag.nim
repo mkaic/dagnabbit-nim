@@ -152,10 +152,10 @@ proc make_inputs*(
       x: int = idx div (1) mod width
 
     let
+      c_bits: seq[char] = c_as_bits[c]
       x_bits: seq[char] = x_as_bits[x]
       y_bits: seq[char] = y_as_bits[y]
-      c_bits: seq[char] = c_as_bits[c]
-
+      
     let pos_bits: seq[char] = x_bits & y_bits & c_bits
     input_values.add(pos_bits)
   return input_values
@@ -208,12 +208,11 @@ proc outputs_to_pixie_image*(
   outputs: seq[seq[char]], # seq(h*w*c)[seq(output_bitcount)[char]]
   height: int,
   width: int,
-  channels: int
   ): pix.Image =
 
-  var as_uint8: seq[uint8]
+  var bytes: seq[uint8]
   for stack_of_bits in outputs:
-    as_uint8.add(
+    bytes.add(
       cast[uint8](
         binchar_seq_to_int64(stack_of_bits)
         )
@@ -224,9 +223,9 @@ proc outputs_to_pixie_image*(
   for y in 0 ..< height:
     for x in 0 ..< width:
       var rgb: array[3, uint8]
-      for c in 0 ..< channels:
+      for c in 0 ..< 3:
         let idx = (c * height * width) + (y * width) + x
-        rgb[c] = as_uint8[idx]
+        rgb[c] = bytes[idx]
 
       output_image.unsafe[x, y] = pix.rgba(rgb[0], rgb[1], rgb[2], 255)
 
@@ -254,13 +253,18 @@ proc stage_mutation*(graph: var Graph, lookback: int) =
   let random_idx = rand(0..<available_gates.len)
   var gate = available_gates[random_idx]
 
-  let total_idx = (graph.inputs.len - 1) + random_idx
-  var available_inputs = graph.inputs & graph.gates & graph.outputs
+  var available_inputs = graph.gates & graph.outputs
 
-  available_inputs = available_inputs[0..<total_idx]
+  if random_idx > 0:
+    available_inputs = available_inputs[0..<random_idx]
 
-  if lookback > 0 and available_inputs.len >= lookback:
-    available_inputs = available_inputs[^lookback..^1]
+    if lookback > 0 and available_inputs.len >= lookback:
+      available_inputs = available_inputs[^lookback..^1]
+  
+  else:
+    available_inputs = @[]
+  
+  available_inputs = graph.inputs & available_inputs
 
   let old_inputs = gate.inputs
   choose_random_gate_inputs(gate, available_inputs)

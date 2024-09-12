@@ -62,7 +62,6 @@ for i in 1..10_000:
     outputs,
     height = height,
     width = width,
-    channels = channels
     )
 
   let candidate_error = calculate_mae(branos, output_image)
