@@ -3,20 +3,21 @@ import std/sugar
 import std/random
 import std/bitops
 import std/strutils
+import std/sequtils
 import pixie as pix
 
 randomize()
 
 type
   Gate* = ref object
-    value: int64
-    evaluated: bool
-    inputs: seq[Gate]
+    value*: int64 = 0'i64
+    evaluated*: bool = false
+    inputs*: seq[Gate]
 
   Graph* = object
-    inputs: seq[Gate]
+    inputs*: seq[Gate]
     gates*: seq[Gate]
-    outputs: seq[Gate]
+    outputs*: seq[Gate]
     mutated_gate: Gate
     unmutated_inputs_cache: seq[Gate]
 
@@ -28,7 +29,9 @@ proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
 proc eval*(gate: Gate): int64 =
-  if not gate.evaluated:
+  if gate.evaluated:
+    return gate.value
+  else:
     gate.value = bit_not(
       bit_and(
         gate.inputs[0].eval(),
@@ -36,29 +39,31 @@ proc eval*(gate: Gate): int64 =
       )
     )
     gate.evaluated = true
-
-  return gate.value
+    return gate.value
 
 proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
-  for g in graph.gates:
-    g.evaluated = false
-  for g in graph.outputs:
-    g.evaluated = false
 
   var output: seq[seq[int64]]
   for batch in batched_inputs:
-    for i in 0 ..< graph.inputs.len:
-      graph.inputs[i].value = batch[i]
+
+    for g in graph.gates:
+      g.evaluated = false
+    for o in graph.outputs:
+      o.evaluated = false
+    for i in graph.inputs:
+      i.evaluated = true
+
+    for (i, v) in zip(graph.inputs, batch):
+      i.value = v
 
     var batch_output: seq[int64]
-    for i, o in graph.outputs:
-      let gate_output = o.eval()
-      batch_output.add(gate_output)
+    for o in graph.outputs:
+      batch_output.add(o.eval())
     output.add(batch_output)
 
   return output
 
-proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate])=
+proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate]) =
   gate.inputs = collect(newSeq):
     for i in 0..1:
       sample(available_inputs)
@@ -81,7 +86,7 @@ proc add_random_gate*(
   # but this leaves one undetermined input on the new gate. This
   # input is chosen randomly from gates before the new gate in
   # the graph.
-  
+
   let all_gates: seq[Gate] = graph.inputs & graph.gates & graph.outputs
   let gate_a_idx: int = rand(graph.inputs.len ..< all_gates.len)
   var gate_a: Gate = all_gates[gate_a_idx]
@@ -95,13 +100,14 @@ proc add_random_gate*(
   gate_a.inputs.insert(new_gate, random_input_choice)
 
   new_gate.inputs.add(gate_b)
-  
+
   # This index originally referred to a location in all_gates, but I want a version
   # for just graph.gates now. So we subtract the number of inputs and clamp any indices
   # that used to refer to output-gates, since they would be larger than the length of graph.gates.
   # If an output is chosen, and there aren't any gates in graph.gates, the index will be 0.
 
-  let localized_gate_a_idx: int = min(gate_a_idx.int - graph.inputs.len.int, graph.gates.len)
+  let localized_gate_a_idx: int = min(gate_a_idx.int - graph.inputs.len.int,
+      graph.gates.len)
   var gate_c_options: seq[Gate]
   if graph.gates.len > 0:
     var gate_c_localized_idx_lower: int
@@ -111,7 +117,7 @@ proc add_random_gate*(
       gate_c_localized_idx_lower = 0
 
     gate_c_options = graph.inputs & graph.gates[gate_c_localized_idx_lower ..< localized_gate_a_idx]
-  
+
   else:
     gate_c_options = graph.inputs
 
@@ -129,7 +135,7 @@ proc make_inputs*(
   y_bitcount: int,
   c_bitcount: int,
   pos_bitcount: int,
-  ): seq[seq[char]] = 
+  ): seq[seq[char]] =
   # returns seq(h*w*c)[seq(input_bitcount)[char]]
 
   let
@@ -158,13 +164,13 @@ proc make_inputs*(
       c_bits: seq[char] = c_as_bits[c]
       x_bits: seq[char] = x_as_bits[x]
       y_bits: seq[char] = y_as_bits[y]
-      
+
     let pos_bits: seq[char] = x_bits & y_bits & c_bits
     input_values.add(pos_bits)
   return input_values
 
 proc transpose_2d[T](matrix: seq[seq[T]]): seq[seq[T]] =
-  let 
+  let
     dim0: int = matrix.len
     dim1: int = matrix[0].len
 
@@ -218,8 +224,8 @@ proc outputs_to_pixie_image*(
     bytes.add(
       cast[uint8](
         binchar_seq_to_int64(stack_of_bits)
-        )
       )
+    )
 
   var output_image = pix.new_image(width, height)
 
@@ -263,10 +269,10 @@ proc stage_mutation*(graph: var Graph, lookback: int) =
 
     if lookback > 0 and available_inputs.len >= lookback:
       available_inputs = available_inputs[^lookback..^1]
-  
+
   else:
     available_inputs = @[]
-  
+
   available_inputs = graph.inputs & available_inputs
 
   let old_inputs = gate.inputs
