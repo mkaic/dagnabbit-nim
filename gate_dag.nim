@@ -1,4 +1,5 @@
 # import std/sequtils
+import ./gate_funcs
 import std/sugar
 import std/random
 import std/bitops
@@ -9,17 +10,18 @@ import pixie as pix
 randomize()
 
 type
-  Gate* = ref object
-    value*: int64 = 0'i64
-    evaluated*: bool = false
-    inputs*: seq[Gate]
+  Gate = ref object
+    value: int64
+    evaluated: bool = false
+    inputs: array[2, Gate]
+    function: GateFunc
+    function_cache: GateFunc
 
   Graph* = object
-    inputs*: seq[Gate]
-    gates*: seq[Gate]
-    outputs*: seq[Gate]
+    inputs: seq[Gate]
+    gates: seq[Gate]
+    outputs: seq[Gate]
     mutated_gate: Gate
-    unmutated_inputs_cache: seq[Gate]
 
 proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
   return collect(newSeq):
@@ -28,17 +30,18 @@ proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
 proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
-proc eval*(gate: Gate): int64 =
+proc eval(gate: Gate): int64 =
   if gate.evaluated:
     return gate.value
+
   else:
-    gate.value = bit_not(
-      bit_and(
-        gate.inputs[0].eval(),
-        gate.inputs[1].eval()
-      )
-    )
+    var inputs: array[2, int64]
+    for i in 0..1:
+      inputs[i] = gate.inputs[i].eval()
+
+    gate.value = gate.function.eval(inputs)
     gate.evaluated = true
+
     return gate.value
 
 proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
@@ -64,9 +67,8 @@ proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
   return output
 
 proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate]) =
-  gate.inputs = collect(newSeq):
-    for i in 0..1:
-      sample(available_inputs)
+  for i in 0..1:
+    gate.inputs[i] = sample(available_inputs)
 
 proc add_input*(graph: var Graph) =
   graph.inputs.add(Gate(value: 0'i64, evaluated: true))
@@ -94,12 +96,11 @@ proc add_random_gate*(
   let random_input_choice: int = rand(0..<2)
   var gate_b: Gate = gate_a.inputs[random_input_choice]
 
-  var new_gate: Gate = Gate(value: 0'i64, evaluated: false)
+  var new_gate: Gate = Gate(function: rand(GateFunc.low..GateFunc.high))
 
-  gate_a.inputs.delete(random_input_choice)
-  gate_a.inputs.insert(new_gate, random_input_choice)
+  gate_a.inputs[random_input_choice] = new_gate
 
-  new_gate.inputs.add(gate_b)
+  new_gate.inputs[0] = gate_b
 
   # This index originally referred to a location in all_gates, but I want a version
   # for just graph.gates now. So we subtract the number of inputs and clamp any indices
@@ -123,7 +124,7 @@ proc add_random_gate*(
 
   let gate_c = sample(gate_c_options)
 
-  new_gate.inputs.add(gate_c)
+  new_gate.inputs[1] = gate_c
 
   graph.gates.insert(new_gate, localized_gate_a_idx)
 
@@ -259,31 +260,12 @@ proc calculate_mae*(
   return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
 
 
-proc stage_mutation*(graph: var Graph, lookback: int) =
+proc stage_mutation*(graph: var Graph) =
   let available_gates = graph.gates & graph.outputs
-  let random_idx = rand(0..<available_gates.len)
-  var gate = available_gates[random_idx]
+  graph.mutated_gate = sample(available_gates)
 
-  var available_inputs = graph.gates & graph.outputs
-
-  if random_idx > 0:
-    available_inputs = available_inputs[0..<random_idx]
-
-    if lookback > 0 and available_inputs.len >= lookback:
-      available_inputs = available_inputs[^lookback..^1]
-
-  else:
-    available_inputs = @[]
-
-  available_inputs = graph.inputs & available_inputs
-
-  let old_inputs = gate.inputs
-  choose_random_gate_inputs(gate, available_inputs)
-
-  graph.mutated_gate = gate
-  graph.unmutated_inputs_cache = old_inputs
+  graph.mutated_gate.function_cache = graph.mutated_gate.function
+  graph.mutated_gate.function = rand(GateFunc.low..GateFunc.high)
 
 proc undo_mutation*(graph: var Graph) =
-  var gate = graph.mutated_gate
-  for i in 0..1:
-    gate.inputs[i] = graph.unmutated_inputs_cache[i]
+  graph.mutated_gate.function = graph.mutated_gate.function_cache
