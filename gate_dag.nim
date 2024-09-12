@@ -11,15 +11,21 @@ type
   Gate* = ref object
     value: int64
     evaluated: bool
-    inputs: array[2, Gate]
+    inputs: seq[Gate]
 
   Graph* = object
     inputs: seq[Gate]
     gates*: seq[Gate]
     outputs: seq[Gate]
     mutated_gate: Gate
-    unmutated_inputs_cache: array[2, Gate]
+    unmutated_inputs_cache: seq[Gate]
 
+proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
+  return collect(newSeq):
+    for c in to_bin(i, bits): c
+
+proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
+  return cast[int64](binchar_seq.join("").parse_bin_int())
 
 proc eval*(gate: Gate): int64 =
   if not gate.evaluated:
@@ -52,8 +58,9 @@ proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
   return output
 
 proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate])=
-  for i in 0..1:
-    gate.inputs[i] = sample(available_inputs)
+  gate.inputs = collect(newSeq):
+    for i in 0..1:
+      sample(available_inputs)
 
 proc add_input*(graph: var Graph) =
   graph.inputs.add(Gate(value: 0'i64, evaluated: true))
@@ -83,8 +90,10 @@ proc add_random_gate*(
 
   var new_gate: Gate = Gate(value: 0'i64, evaluated: false)
 
-  gate_a.inputs[random_input_choice] = new_gate
-  new_gate.inputs[0] = gate_b
+  gate_a.inputs.delete(random_input_choice)
+  gate_a.inputs.insert(new_gate, random_input_choice)
+
+  new_gate.inputs.add(gate_b)
   
   # This index originally referred to a location in all_gates, but I want a version
   # for just graph.gates now. So we subtract the number of inputs and clamp any indices
@@ -107,16 +116,9 @@ proc add_random_gate*(
 
   let gate_c = sample(gate_c_options)
 
-  new_gate.inputs[1] = gate_c
+  new_gate.inputs.add(gate_c)
 
   graph.gates.insert(new_gate, localized_gate_a_idx)
-
-proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
-  return collect(newSeq):
-    for c in to_bin(i, bits): c
-
-proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
-  return cast[int64](binchar_seq.join("").parse_bin_int())
 
 proc make_inputs*(
   height: int,
@@ -222,10 +224,10 @@ proc outputs_to_pixie_image*(
 
   for y in 0 ..< height:
     for x in 0 ..< width:
-      var rgb: array[3, uint8]
+      var rgb: seq[uint8]
       for c in 0 ..< 3:
         let idx = (c * height * width) + (y * width) + x
-        rgb[c] = bytes[idx]
+        rgb.add(bytes[idx])
 
       output_image.unsafe[x, y] = pix.rgba(rgb[0], rgb[1], rgb[2], 255)
 

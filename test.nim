@@ -19,7 +19,7 @@ const
   output_bitcount = 8
 
   num_gates = 1024
-  lookback = 32
+  lookback = 0
   improvement_deque_len = 50
 
 echo x_bitcount
@@ -87,6 +87,6 @@ for i in 1..10_000:
     graph.undo_mutation()
 
   if improved.len > improvement_deque_len:
-    improved.del(0)
+    improved.delete(0)
 
 
