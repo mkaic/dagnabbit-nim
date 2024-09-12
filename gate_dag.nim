@@ -175,7 +175,7 @@ proc transpose_2d[T](matrix: seq[seq[T]]): seq[seq[T]] =
 
 proc pack_int64_batches*(unbatched: seq[seq[char]], bitcount: int): seq[seq[int64]] =
   # seq(h*w*c)[seq(input_bitcount)[char]] -> seq(num_batches)[seq(bitcount)[int64]]
-  var num_batches: int = unbatched.len div 64 + 1
+  var num_batches: int = (unbatched.len - 1) div 64 + 1
   var batches: seq[seq[int64]]
   for batch_number in 0 ..< num_batches:
     var char_batch: seq[seq[char]] # will have shape seq(64)[seq(input_bitcount)[char]]

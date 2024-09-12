@@ -3,12 +3,13 @@ import pixie as pix
 import std/strformat
 import std/math
 import std/bitops
+import std/strutils
 
 var branos = pix.read_image("branos.png")
 
 const
-  width = 15
-  height = 15
+  width = 8
+  height = 8
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -60,8 +61,8 @@ let bitpacked_inputs = pack_int64_batches(
 
 for i in 1..10_000:
   graph.stage_mutation(lookback=lookback)
-  let bitpacked_outputs = graph.eval(bitpacked_inputs)
-  let outputs = unpack_int64_batches(bitpacked_outputs)
+  let bitpacked_outputs: seq[seq[int64]] = graph.eval(bitpacked_inputs)
+  let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)[0..<height*width*channels]
 
   let output_image = outputs_to_pixie_image(
     outputs,
