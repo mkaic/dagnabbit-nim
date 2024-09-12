@@ -1,7 +1,6 @@
 import ./gate_dag
 import pixie as pix
 import std/strformat
-import std/sequtils
 import std/math
 import std/bitops
 
