@@ -8,8 +8,8 @@ import std/strutils
 var branos = pix.read_image("branos.png")
 
 const
-  width = 64
-  height = 64
+  width = 32
+  height = 32
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -17,7 +17,7 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 1024
+  num_gates = 512
   lookback = 0
   improvement_deque_len = 50
 
@@ -37,7 +37,7 @@ for i in 0 ..< output_bitcount:
   graph.add_output()
 
 for i in 0 ..< num_gates:
-  graph.add_random_gate(lookback = lookback)
+  discard graph.add_random_gate(lookback = lookback)
 
 
 echo &"Graph has {graph.gates.len} gates"
@@ -81,7 +81,7 @@ for i in 1..10_000:
     improved.add(1)
     let improvement_rate = math.sum[int8](improved).float64 /
         improved.len.float64
-    echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}"
+    echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}. Gates: {graph.gates.len}"
   elif candidate_error == error:
     improved.add(0)
   else:

@@ -81,7 +81,7 @@ proc add_output*(graph: var Graph) =
 proc add_random_gate*(
   graph: var Graph,
   lookback: int = 0,
-  ) =
+  ): int =
   # we split an edge between two existing gates with a new gate
   # but this leaves one undetermined input on the new gate. This
   # input is chosen randomly from gates before the new gate in
@@ -126,6 +126,8 @@ proc add_random_gate*(
   new_gate.inputs.add(gate_c)
 
   graph.gates.insert(new_gate, localized_gate_a_idx)
+
+  return localized_gate_a_idx
 
 proc make_inputs*(
   height: int,
