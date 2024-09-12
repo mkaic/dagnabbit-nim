@@ -51,8 +51,9 @@ proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
       graph.inputs[i].value = batch[i]
 
     var batch_output: seq[int64]
-    for o in graph.outputs:
-      batch_output.add(o.eval())
+    for i, o in graph.outputs:
+      let gate_output = o.eval()
+      batch_output.add(gate_output)
     output.add(batch_output)
 
   return output

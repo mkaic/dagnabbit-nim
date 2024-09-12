@@ -19,7 +19,7 @@ const
   output_bitcount = 8
 
   num_gates = 1024
-  lookback = 0
+  lookback = 1
   improvement_deque_len = 50
 
 echo x_bitcount
