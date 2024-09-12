@@ -7,8 +7,8 @@ import std/bitops
 var branos = pix.read_image("branos.png")
 
 const
-  width = 128
-  height = 128
+  width = 32
+  height = 32
   channels = 3
 
   x_bitcount = fast_log2(width) + 1

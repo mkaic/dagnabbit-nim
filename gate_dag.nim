@@ -230,8 +230,7 @@ proc stage_mutation*(graph: var Graph, lookback: int) =
     available_inputs = available_inputs[^lookback..^1]
 
   let old_inputs = gate.inputs
-  for i in 0..1:
-    gate.inputs[i] = available_inputs[rand(available_inputs.len - 1)]
+  choose_random_gate_inputs(gate, available_inputs)
 
   graph.mutated_gate = gate
   graph.unmutated_inputs_cache = old_inputs
