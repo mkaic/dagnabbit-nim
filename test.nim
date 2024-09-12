@@ -17,8 +17,8 @@ const
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
 
-  num_gates = 256
-  lookback = 0
+  num_gates = 1024
+  lookback = 32
   improvement_deque_len = 50
 
 branos = branos.resize(width, height)

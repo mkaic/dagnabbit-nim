@@ -53,7 +53,7 @@ proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
 
 proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate])=
   for i in 0..1:
-    gate.inputs[i] = available_inputs[rand(available_inputs.len - 1)]
+    gate.inputs[i] = sample(available_inputs)
 
 proc add_input*(graph: var Graph) =
   graph.inputs.add(Gate(value: 0'i64, evaluated: true))
@@ -69,14 +69,47 @@ proc add_random_gate*(
   graph: var Graph,
   lookback: int = 0,
   ) =
-  var available_graph_inputs = graph.inputs & graph.gates
+  # we split an edge between two existing gates with a new gate
+  # but this leaves one undetermined input on the new gate. This
+  # input is chosen randomly from gates before the new gate in
+  # the graph.
+  
+  let all_gates: seq[Gate] = graph.inputs & graph.gates & graph.outputs
+  let gate_a_idx: int = rand(graph.inputs.len ..< all_gates.len)
+  var gate_a: Gate = all_gates[gate_a_idx]
 
-  if lookback > 0 and graph.gates.len >= lookback:
-    available_graph_inputs = available_graph_inputs[^lookback..^1]
+  let random_input_choice: int = rand(0..<2)
+  var gate_b: Gate = gate_a.inputs[random_input_choice]
 
-  let g = Gate(value: 0'i64, evaluated: false)
-  choose_random_gate_inputs(g, available_graph_inputs)
-  graph.gates.add(g)
+  var new_gate: Gate = Gate(value: 0'i64, evaluated: false)
+
+  gate_a.inputs[random_input_choice] = new_gate
+  new_gate.inputs[0] = gate_b
+  
+  # This index originally referred to a location in all_gates, but I want a version
+  # for just graph.gates now. So we subtract the number of inputs and clamp any indices
+  # that used to refer to output-gates, since they would be larger than the length of graph.gates.
+  # If an output is chosen, and there aren't any gates in graph.gates, the index will be 0.
+
+  let localized_gate_a_idx: int = min(gate_a_idx.int - graph.inputs.len.int, graph.gates.len)
+  var gate_c_options: seq[Gate]
+  if graph.gates.len > 0:
+    var gate_c_localized_idx_lower: int
+    if lookback > 0:
+      gate_c_localized_idx_lower = max(0, localized_gate_a_idx.int - lookback.int)
+    else:
+      gate_c_localized_idx_lower = 0
+
+    gate_c_options = graph.inputs & graph.gates[gate_c_localized_idx_lower ..< localized_gate_a_idx]
+  
+  else:
+    gate_c_options = graph.inputs
+
+  let gate_c = sample(gate_c_options)
+
+  new_gate.inputs[1] = gate_c
+
+  graph.gates.insert(new_gate, localized_gate_a_idx)
 
 proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
   return collect(newSeq):
