@@ -4,12 +4,15 @@ import std/strformat
 import std/math
 import std/bitops
 import std/strutils
+import std/random
+
+randomize()
 
 var branos = pix.read_image("branos.png")
 
 const
-  width = 32
-  height = 32
+  width = 128
+  height = 128
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -18,7 +21,7 @@ const
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
   num_gates = 2048
-  lookback = num_gates div 16
+  lookback = num_gates div 8
   improvement_deque_len = 50
 
 echo x_bitcount
@@ -58,9 +61,16 @@ let bitpacked_inputs = pack_int64_batches(
   bitcount = input_bitcount
 )
 
+type MutationType = enum mt_FUNCTION, mt_INPUT
+
 for i in 1..10_000:
   var random_gate = graph.select_random_gate()
-  random_gate.stage_mutation()
+  let mutation_type = rand(MutationType.low..MutationType.high)
+  case mutation_type
+  of mt_FUNCTION:
+    random_gate.stage_function_mutation()
+  of mt_INPUT:
+    random_gate.stage_input_mutation(graph, lookback)
 
   let bitpacked_outputs: seq[seq[int64]] = graph.eval(bitpacked_inputs)
   let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)
@@ -89,7 +99,11 @@ for i in 1..10_000:
     improved.add(0)
   else:
     improved.add(0)
-    random_gate.undo_mutation()
+    case mutation_type
+    of mt_FUNCTION:
+      random_gate.undo_function_mutation()
+    of mt_INPUT:
+      random_gate.undo_input_mutation()
 
   if improved.len > improvement_deque_len:
     improved.delete(0)

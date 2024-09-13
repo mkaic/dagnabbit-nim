@@ -13,6 +13,7 @@ type
     value: seq[int64]
     evaluated: bool = false
     inputs: array[2, Gate]
+    inputs_cache: array[2, Gate]
     function: GateFunc
     function_cache: GateFunc
 
@@ -86,8 +87,8 @@ proc add_random_gate*(
   # the graph.
 
   let all_gates: seq[Gate] = graph.inputs & graph.gates & graph.outputs
-  let gate_a_idx: int = rand(graph.inputs.len ..< all_gates.len)
-  var gate_a: Gate = all_gates[gate_a_idx]
+  let global_gate_a_idx: int = rand(graph.inputs.len ..< all_gates.len)
+  var gate_a: Gate = all_gates[global_gate_a_idx]
 
   let random_input_choice: int = rand(0..<2)
   var gate_b: Gate = gate_a.inputs[random_input_choice]
@@ -103,7 +104,7 @@ proc add_random_gate*(
   # that used to refer to output-gates, since they would be larger than the length of graph.gates.
   # If an output is chosen, and there aren't any gates in graph.gates, the index will be 0.
 
-  let localized_gate_a_idx: int = min(gate_a_idx.int - graph.inputs.len.int,
+  let localized_gate_a_idx: int = min(global_gate_a_idx.int - graph.inputs.len.int,
       graph.gates.len)
   var gate_c_options: seq[Gate]
   if graph.gates.len > 0:
@@ -270,9 +271,25 @@ proc calculate_mae*(
 proc select_random_gate*(graph: Graph): Gate =
   return sample(graph.gates & graph.outputs)
 
-proc stage_mutation*(gate: var Gate) =
+proc stage_function_mutation*(gate: var Gate) =
   gate.function_cache = gate.function
   gate.function = rand(GateFunc.low..GateFunc.high)
 
-proc undo_mutation*(gate: var Gate) =
+proc undo_function_mutation*(gate: var Gate) =
   gate.function = gate.function_cache
+
+proc stage_input_mutation*(gate: var Gate, graph: Graph, lookback: int) =
+  gate.inputs_cache = gate.inputs
+  let gate_idx: int = graph.gates.find(gate)
+  var available_inputs: seq[Gate]
+  if lookback > 0 and gate_idx > lookback:
+    available_inputs = graph.inputs & graph.gates[gate_idx - lookback ..< gate_idx]
+  elif gate_idx > 0:
+    available_inputs = graph.inputs & graph.gates[0 ..< gate_idx]
+  else:
+    available_inputs = graph.inputs
+
+  choose_random_gate_inputs(gate, available_inputs)
+
+proc undo_input_mutation*(gate: var Gate) =
+  gate.inputs = gate.inputs_cache
