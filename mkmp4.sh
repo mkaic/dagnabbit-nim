@@ -1,5 +1,5 @@
 ffmpeg \
--framerate 24 \
+-framerate 30 \
 -i "outputs/%6d.png" \
 -vcodec libx264 \
 -crf 18 \

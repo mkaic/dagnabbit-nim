@@ -1,5 +1,6 @@
 import std/bitops
 import std/sequtils
+import std/strutils
 
 type
   GateFunc* = enum
@@ -13,10 +14,10 @@ type
     # gf_B,
     # gf_NOT_A,
     # gf_NOT_B
-    # gf_NOT_A_AND_B,
-    # gf_A_AND_NOT_B,
-    # gf_NOT_A_OR_B,
-    # gf_A_OR_NOT_B,
+    gf_NOT_A_AND_B,
+    gf_A_AND_NOT_B,
+    gf_NOT_A_OR_B,
+    gf_A_OR_NOT_B,
     # gf_ONE,
     # gf_ZERO
 
@@ -45,16 +46,16 @@ proc eval*(gf: GateFunc, inputs: seq[seq[int64]]): seq[int64] =
     #   output.add(bit_not(a))
     # of gf_NOT_B:
     #   output.add(bit_not(b))
-    # of gf_NOT_A_AND_B:
-    #   output.add(bit_and(bit_not(a), b))
-    # of gf_A_AND_NOT_B:
-    #   output.add(bit_and(a, bit_not(b)))
-    # of gf_NOT_A_OR_B:
-    #   output.add(bit_or(bit_not(a), b))
-    # of gf_A_OR_NOT_B:
-    #   output.add(bit_or(a, bit_not(b)))
+    of gf_NOT_A_AND_B:
+      output.add(bit_and(bit_not(a), b))
+    of gf_A_AND_NOT_B:
+      output.add(bit_and(a, bit_not(b)))
+    of gf_NOT_A_OR_B:
+      output.add(bit_or(bit_not(a), b))
+    of gf_A_OR_NOT_B:
+      output.add(bit_or(a, bit_not(b)))
     # of gf_ONE:
-    #   output.add(high(int64))
+    #   output.add(bit_not(0'i64)) 
     # of gf_ZERO:
-    #   output.add(low(int64))
+    #   output.add(0'i64) # 0'i64 binary representation is 64 0s in a row.
   return output
