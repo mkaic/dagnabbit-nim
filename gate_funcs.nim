@@ -1,4 +1,5 @@
 import std/bitops
+import std/sequtils
 
 type
   GateFunc* = enum
@@ -19,37 +20,41 @@ type
     # gf_ONE,
     # gf_ZERO
 
-proc eval*(gf: GateFunc, inputs: array[2, int64]): int64 =
-  case gf
-  of gf_AND:
-    return bit_and(inputs[0], inputs[1])
-  of gf_NAND:
-    return bit_not(bit_and(inputs[0], inputs[1]))
-  of gf_OR:
-    return bit_or(inputs[0], inputs[1])
-  of gf_NOR:
-    return bit_not(bit_or(inputs[0], inputs[1]))
-  of gf_XOR:
-    return bit_xor(inputs[0], inputs[1])
-  of gf_XNOR:
-    return bit_not(bit_xor(inputs[0], inputs[1]))
-  # of gf_A:
-  #   return inputs[0]
-  # of gf_B:
-  #   return inputs[1]
-  # of gf_NOT_A:
-  #   return bit_not(inputs[0])
-  # of gf_NOT_B:
-  #   return bit_not(inputs[1])
-  # of gf_NOT_A_AND_B:
-  #   return bit_and(bit_not(inputs[0]), inputs[1])
-  # of gf_A_AND_NOT_B:
-  #   return bit_and(inputs[0], bit_not(inputs[1]))
-  # of gf_NOT_A_OR_B:
-  #   return bit_or(bit_not(inputs[0]), inputs[1])
-  # of gf_A_OR_NOT_B:
-  #   return bit_or(inputs[0], bit_not(inputs[1]))
-  # of gf_ONE:
-  #   return high(int64)
-  # of gf_ZERO:
-  #   return low(int64)
+proc eval*(gf: GateFunc, inputs: seq[seq[int64]]): seq[int64] =
+  # inputs is seq(2)[seq(num_batches)[int64]]
+  var output: seq[int64]
+  for (a, b) in zip(inputs[0], inputs[1]):
+    case gf
+    of gf_AND:
+      output.add(bit_and(a, b))
+    of gf_NAND:
+      output.add(bit_not(bit_and(a, b)))
+    of gf_OR:
+      output.add(bit_or(a, b))
+    of gf_NOR:
+      output.add(bit_not(bit_or(a, b)))
+    of gf_XOR:
+      output.add(bit_xor(a, b))
+    of gf_XNOR:
+      output.add(bit_not(bit_xor(a, b)))
+    # of gf_A:
+    #   output.add(a)
+    # of gf_B:
+    #   output.add(b)
+    # of gf_NOT_A:
+    #   output.add(bit_not(a))
+    # of gf_NOT_B:
+    #   output.add(bit_not(b))
+    # of gf_NOT_A_AND_B:
+    #   output.add(bit_and(bit_not(a), b))
+    # of gf_A_AND_NOT_B:
+    #   output.add(bit_and(a, bit_not(b)))
+    # of gf_NOT_A_OR_B:
+    #   output.add(bit_or(bit_not(a), b))
+    # of gf_A_OR_NOT_B:
+    #   output.add(bit_or(a, bit_not(b)))
+    # of gf_ONE:
+    #   output.add(high(int64))
+    # of gf_ZERO:
+    #   output.add(low(int64))
+  return output

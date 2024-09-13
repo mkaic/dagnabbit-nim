@@ -2,7 +2,6 @@
 import ./gate_funcs
 import std/sugar
 import std/random
-import std/bitops
 import std/strutils
 import std/sequtils
 import pixie as pix
@@ -11,7 +10,7 @@ randomize()
 
 type
   Gate = ref object
-    value: int64
+    value: seq[int64]
     evaluated: bool = false
     inputs: array[2, Gate]
     function: GateFunc
@@ -30,14 +29,14 @@ proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
 proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
   return cast[int64](binchar_seq.join("").parse_bin_int())
 
-proc eval(gate: Gate): int64 =
+proc eval(gate: Gate): seq[int64] =
   if gate.evaluated:
     return gate.value
 
   else:
-    var inputs: array[2, int64]
+    var inputs: seq[seq[int64]]
     for i in 0..1:
-      inputs[i] = gate.inputs[i].eval()
+      inputs.add(gate.inputs[i].eval())
 
     gate.value = gate.function.eval(inputs)
     gate.evaluated = true
@@ -46,23 +45,20 @@ proc eval(gate: Gate): int64 =
 
 proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
 
+  for g in graph.gates:
+    g.evaluated = false
+  for o in graph.outputs:
+    o.evaluated = false
+  for i in graph.inputs:
+    i.evaluated = true
+
   var output: seq[seq[int64]]
-  for batch in batched_inputs:
 
-    for g in graph.gates:
-      g.evaluated = false
-    for o in graph.outputs:
-      o.evaluated = false
-    for i in graph.inputs:
-      i.evaluated = true
+  for (i, v) in zip(graph.inputs, batched_inputs):
+    i.value = v
 
-    for (i, v) in zip(graph.inputs, batch):
-      i.value = v
-
-    var batch_output: seq[int64]
-    for o in graph.outputs:
-      batch_output.add(o.eval())
-    output.add(batch_output)
+  for o in graph.outputs:
+    output.add(o.eval())
 
   return output
 
@@ -186,9 +182,11 @@ proc transpose_2d[T](matrix: seq[seq[T]]): seq[seq[T]] =
   return transposed
 
 proc pack_int64_batches*(unbatched: seq[seq[char]], bitcount: int): seq[seq[int64]] =
-  # seq(h*w*c)[seq(input_bitcount)[char]] -> seq(num_batches)[seq(bitcount)[int64]]
+  # seq(h*w*c)[seq(input_bitcount)[char]] --> seq(bitcount)[seq(num_batches)[int64]]
   var num_batches: int = (unbatched.len - 1) div 64 + 1
-  var batches: seq[seq[int64]]
+  # will have shape seq(bitcount)[seq(num_batches)[int64]]
+  var batched: seq[seq[int64]]
+
   for batch_number in 0 ..< num_batches:
     var char_batch: seq[seq[char]] # will have shape seq(64)[seq(input_bitcount)[char]]
     for intra_batch_idx in 0 ..< 64:
@@ -200,33 +198,43 @@ proc pack_int64_batches*(unbatched: seq[seq[char]], bitcount: int): seq[seq[int6
     for stack_of_bits in char_batch.transpose_2d(): # seq(input_bitcount)[seq(64)[char]]
       int64_batch.add(binchar_seq_to_int64(stack_of_bits))
 
-    batches.add(int64_batch)
-  return batches
+    if batched.len == 0:
+      for i in 0..<bitcount:
+        batched.add(@[int64_batch[i]])
+    else:
+      for i in 0..<bitcount:
+        batched[i] &= int64_batch[i]
+
+  return batched
 
 
 proc unpack_int64_batches*(batched: seq[seq[int64]]): seq[seq[char]] =
-  # seq(num_batches)[seq(output_bitcount)[int64]] -> seq(h*w*c)[seq(output_bitcount)[char]]
-  var unbatched: seq[seq[char]] # will have shape seq(h*w*c)[seq(output_bitcount)[char]]
-  for batch in batched: # seq(output_bitcount)[int64]
-    var char_batch: seq[seq[char]] # will have shape seq(output_bitcount)[seq(64)[char]]
-    for int64_input in batch: # int64
-      char_batch.add(int64_input.int64_to_binchar_seq(bits = 64))
-    unbatched &= char_batch.transpose_2d() # seq(64)[seq(output_bitcount)[char]]
+  # seq(output_bitcount)[seq(num_batches)[int64]] --> seq(num_batches * 64)[seq(output_bitcount)[char]]
+  var unbatched: seq[seq[char]] # seq(output_bitcount)[seq(num_batches * 64)[char]]
+  for bit_column in batched: # seq(num_batches)[int64]
 
-  return unbatched
+    # will have shape seq(num_batches * 64)[char]
+    var char_batch: seq[char]
+    for int64_input in bit_column: # int64
+      char_batch &= int64_input.int64_to_binchar_seq(bits = 64)
 
+    unbatched.add(char_batch)
+
+  return unbatched.transpose_2d() # seq(num_batches * 64)[seq(output_bitcount)[char]]
 
 proc outputs_to_pixie_image*(
-  outputs: seq[seq[char]], # seq(h*w*c)[seq(output_bitcount)[char]]
+  outputs: seq[seq[char]], # seq(num_batches * 64)[seq(output_bitcount)[char]]
   height: int,
   width: int,
+  channels: int,
   ): pix.Image =
 
+  let trimmed = outputs[0 ..< channels * height * width]
   var bytes: seq[uint8]
-  for stack_of_bits in outputs:
+  for binchar_byte in trimmed:
     bytes.add(
       cast[uint8](
-        binchar_seq_to_int64(stack_of_bits)
+        binchar_seq_to_int64(binchar_byte)
       )
     )
 

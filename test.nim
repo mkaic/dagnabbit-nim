@@ -63,13 +63,13 @@ for i in 1..10_000:
   random_gate.stage_mutation()
 
   let bitpacked_outputs: seq[seq[int64]] = graph.eval(bitpacked_inputs)
-  let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)[
-      0..<height*width*channels]
+  let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)
 
   let output_image = outputs_to_pixie_image(
     outputs,
     height = height,
     width = width,
+    channels = channels
     )
 
   let candidate_error = calculate_mae(branos, output_image)
