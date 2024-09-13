@@ -8,11 +8,11 @@ import std/random
 
 randomize()
 
-var branos = pix.read_image("branos.png")
+var branos = pix.read_image("loss.jpg")
 
 const
-  width = 128
-  height = 128
+  width = 35
+  height = 45
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -21,7 +21,7 @@ const
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
   num_gates = 2048
-  lookback = num_gates div 8
+  lookback = num_gates div 2
   improvement_deque_len = 50
 
 echo x_bitcount
@@ -63,7 +63,8 @@ let bitpacked_inputs = pack_int64_batches(
 
 type MutationType = enum mt_FUNCTION, mt_INPUT
 
-for i in 1..10_000:
+var improvement_counter: int = 0
+for i in 1..50_000:
   var random_gate = graph.select_random_gate()
   let mutation_type = rand(MutationType.low..MutationType.high)
   case mutation_type
@@ -90,10 +91,12 @@ for i in 1..10_000:
 
     let improvement_rate = math.sum[int8](improved).float64 /
         improved.len.float64
-    echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}"
+    echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}, Mutation type: {mutation_type}"
 
-    output_image.write_file(&"outputs/{i:06}.png")
-    output_image.write_file(&"latest.png")
+    let resized = output_image.resize(width*8, height*8)
+    resized.write_file(&"outputs/{improvement_counter:06}.png")
+    improvement_counter += 1
+    resized.write_file(&"latest.png")
 
   elif candidate_error == error:
     improved.add(0)

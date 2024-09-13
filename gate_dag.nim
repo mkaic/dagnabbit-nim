@@ -248,7 +248,7 @@ proc outputs_to_pixie_image*(
         let idx = (c * height * width) + (y * width) + x
         rgb.add(bytes[idx])
 
-      output_image.unsafe[x, y] = pix.rgba(rgb[0], rgb[1], rgb[2], 255)
+      output_image.unsafe[x, y] = pix.rgbx(rgb[0], rgb[1], rgb[2], 255)
 
   return output_image
 
