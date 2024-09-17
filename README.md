@@ -1,4 +1,4 @@
-# Spock
+# DAGNabbit
 I'm learning [Nim](nim-lang.org) and experimenting with evolutionary algorithms to generate logical functions.
 
 As a test-case, I'm attempting to map from the binary address of an image byte (represented as 3 n-bit integers corresponding to the X, Y, and C coordinates of the byte) to the byte value itself. This is done by a randomly-initialized [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) of basic logic gates selected from `{AND, NAND, OR, NOR, XOR, XNOR}`.
