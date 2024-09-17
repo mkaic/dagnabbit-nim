@@ -1,5 +1,5 @@
 # Vendored in from https://github.com/treeform/bitty/blob/master/src/bitty.nim
-# Thanks treeform! I've pasted your license below :)
+# Thanks treeform! I (mkaic) have pasted your license below :)
 
 # The MIT License (MIT)
 
@@ -186,67 +186,4 @@ iterator pairs*(b: BitArray): (int, bool) =
   for i in 0 ..< b.len:
     yield (i, b.unsafeGet(i))
 
-type BitArray2d* = ref object
-  ## Creates an array of bits all packed in together.
-  bits: BitArray
-  stride: int
-
-func newBitArray2d*(stride, len: int): BitArray2d =
-  ## Create a new bit array.
-  result = BitArray2d()
-  result.bits = newBitArray(stride * len)
-  result.stride = stride
-
-func `[]`*(b: BitArray2d, x, y: int): bool =
-  b.bits[x * b.stride + y]
-
-func `[]=`*(b: BitArray2d, x, y: int, v: bool) =
-  b.bits[x * b.stride + y] = v
-
-func `and`*(a, b: BitArray2d): BitArray2d =
-  ## And(s) two bit arrays returning a new bit array.
-  result = BitArray2d()
-  result.bits = a.bits and b.bits
-  result.stride = a.stride
-
-func `or`*(a, b: BitArray2d): BitArray2d =
-  ## Or(s) two bit arrays returning a new bit array.
-  result = BitArray2d()
-  result.bits = a.bits or b.bits
-  result.stride = a.stride
-
-# This function was not included in the original source. I (mkaic) added it myself.
-func `xor`*(a, b: BitArray2d): BitArray2d =
-  ## Xor(s) two bit arrays returning a new bit array.
-  result = BitArray2d()
-  result.bits = a.bits xor b.bits
-  result.stride = a.stride
-
-func `not`*(a: BitArray2d): BitArray2d =
-  ## Not(s) or inverts a and returns a new bit array.
-  result = BitArray2d()
-  result.bits = not a.bits
-  result.stride = a.stride
-
-func `==`*(a, b: BitArray2d): bool =
-  ## Are two bit arrays the same.
-  a.stride == b.stride and b.bits == a.bits
-
-func hash*(b: BitArray2d): Hash =
-  ## Computes a Hash for the bit array.
-  hash((b.bits, b.bits.len, b.stride))
-
-func `$`*(b: BitArray2d): string =
-  ## Turns the bit array into a string.
-  result = newStringOfCap(b.bits.len)
-  result.add ("[\n")
-  for i in 0 ..< b.bits.len:
-    if i != 0 and i mod b.stride == 0:
-      result.add "\n"
-    if i mod b.stride == 0:
-      result.add "  "
-    if b.bits[i]:
-      result.add "1"
-    else:
-      result.add "0"
-  result.add ("\n]\n")
+# I (mkaic) have removed BitArray2d from this file, as it isn't necessary for my project.
