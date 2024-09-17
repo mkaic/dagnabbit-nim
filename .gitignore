@@ -12,4 +12,6 @@
 *.jpg
 *.bmp
 
+.DS_Store
+
 outputs
