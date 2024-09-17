@@ -10,22 +10,21 @@ randomize()
 
 type
   Gate = ref object
-    value: BitArray
-    evaluated: bool
+    value*: BitArray
+    evaluated*: bool
 
-    inputs: array[2, Gate]
-    inputs_cache: array[2, Gate]
+    inputs*: array[2, Gate]
+    inputs_cache*: array[2, Gate]
 
-    outputs: seq[Gate]
+    outputs*: seq[Gate]
 
-    function: GateFunc
-    function_cache: GateFunc
+    function*: GateFunc
+    function_cache*: GateFunc
 
   Graph* = object
-    inputs: seq[Gate]
-    gates: seq[Gate]
-    outputs: seq[Gate]
-    mutated_gate: Gate
+    inputs*: seq[Gate]
+    gates*: seq[Gate]
+    outputs*: seq[Gate]
 
 
 proc eval(gate: Gate): BitArray =
@@ -233,11 +232,14 @@ proc calculate_mae*(
   return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
 
 proc select_random_gate*(graph: Graph): Gate =
-  return sample(graph.gates & graph.outputs)
+  return 
 
 proc stage_function_mutation*(gate: var Gate) =
   gate.function_cache = gate.function
-  gate.function = rand(GateFunc.low..GateFunc.high)
+  let available_functions = collect(newSeq):
+    for f in GateFunc.low .. GateFunc.high:
+      if f != gate.function: f
+  gate.function = sample(available_functions)
 
 proc undo_function_mutation*(gate: var Gate) =
   gate.function = gate.function_cache

@@ -61,17 +61,19 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
   pos_bitcount = input_bitcount
   )
 
-type MutationType = enum mt_FUNCTION, mt_INPUT
+type MutationType = enum 
+  mt_FUNCTION,
+  # mt_INPUT
 
 var improvement_counter: int = 0
 for i in 1..50_000:
-  var random_gate = graph.select_random_gate()
+  var random_gate = sample(graph.gates & graph.outputs)
   let mutation_type = rand(MutationType.low..MutationType.high)
   case mutation_type
   of mt_FUNCTION:
     random_gate.stage_function_mutation()
-  of mt_INPUT:
-    random_gate.stage_input_mutation(graph, lookback)
+  # of mt_INPUT:
+  #   random_gate.stage_input_mutation(graph, lookback)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -105,8 +107,8 @@ for i in 1..50_000:
     case mutation_type
     of mt_FUNCTION:
       random_gate.undo_function_mutation()
-    of mt_INPUT:
-      random_gate.undo_input_mutation()
+    # of mt_INPUT:
+    #   random_gate.undo_input_mutation()
 
   if improved.len > improvement_deque_len:
     improved.delete(0)
