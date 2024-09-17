@@ -7,11 +7,6 @@
 # Unignore all dirs
 !*/
 
-*.png
-*.mp4
-*.jpg
-*.bmp
-
 .DS_Store
-
 outputs
+loss.jpg
