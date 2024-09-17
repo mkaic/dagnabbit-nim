@@ -215,6 +215,13 @@ func `or`*(a, b: BitArray2d): BitArray2d =
   result.bits = a.bits or b.bits
   result.stride = a.stride
 
+# This function was not included in the original source. I (mkaic) added it myself.
+func `xor`*(a, b: BitArray2d): BitArray2d =
+  ## Xor(s) two bit arrays returning a new bit array.
+  result = BitArray2d()
+  result.bits = a.bits xor b.bits
+  result.stride = a.stride
+
 func `not`*(a: BitArray2d): BitArray2d =
   ## Not(s) or inverts a and returns a new bit array.
   result = BitArray2d()

@@ -1,5 +1,8 @@
 import ./gate_dag
+import ./bitty
+
 import pixie as pix
+
 import std/strformat
 import std/math
 import std/bitops
@@ -23,11 +26,13 @@ const
   num_gates = 2048
   lookback = num_gates div 2
   improvement_deque_len = 50
+  num_addresses = width * height * channels
 
-echo x_bitcount
-echo y_bitcount
-echo c_bitcount
-echo input_bitcount
+echo "Width address bitcount: ", x_bitcount
+echo "Height address bitcount: ", y_bitcount
+echo "Channel address bitcount: ", c_bitcount
+echo "Total address bitcount: ", input_bitcount
+echo "Total number of addresses: ", num_addresses
 
 branos = branos.resize(width, height)
 branos.write_file("outputs/original.png")
@@ -41,12 +46,12 @@ for i in 0 ..< output_bitcount:
   graph.add_output()
 
 for i in 0 ..< num_gates:
-  discard graph.add_random_gate(lookback = lookback)
+  graph.add_random_gate(lookback = lookback)
 
 var error = 255.0
 var improved: seq[int8]
 
-let inputs: seq[seq[char]] = make_inputs(
+let input_bitarrays: seq[BitArray] = make_input_bitarrays(
   height = height,
   width = width,
   channels = channels,
@@ -55,11 +60,6 @@ let inputs: seq[seq[char]] = make_inputs(
   c_bitcount = c_bitcount,
   pos_bitcount = input_bitcount
   )
-
-let bitpacked_inputs = pack_int64_batches(
-  unbatched = inputs,
-  bitcount = input_bitcount
-)
 
 type MutationType = enum mt_FUNCTION, mt_INPUT
 
@@ -73,11 +73,11 @@ for i in 1..50_000:
   of mt_INPUT:
     random_gate.stage_input_mutation(graph, lookback)
 
-  let bitpacked_outputs: seq[seq[int64]] = graph.eval(bitpacked_inputs)
-  let outputs: seq[seq[char]] = unpack_int64_batches(bitpacked_outputs)
+  let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
+  let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
 
   let output_image = outputs_to_pixie_image(
-    outputs,
+    output_unpacked,
     height = height,
     width = width,
     channels = channels

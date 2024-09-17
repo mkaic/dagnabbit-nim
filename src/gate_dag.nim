@@ -3,7 +3,6 @@ import ./gate_funcs
 import ./bitty
 import std/sugar
 import std/random
-import std/strutils
 import std/sequtils
 import pixie as pix
 
@@ -12,9 +11,13 @@ randomize()
 type
   Gate = ref object
     value: BitArray
-    evaluated: bool = false
+    evaluated: bool
+
     inputs: array[2, Gate]
     inputs_cache: array[2, Gate]
+
+    outputs: seq[Gate]
+
     function: GateFunc
     function_cache: GateFunc
 
@@ -24,16 +27,18 @@ type
     outputs: seq[Gate]
     mutated_gate: Gate
 
+
 proc eval(gate: Gate): BitArray =
   if gate.evaluated:
     return gate.value
 
   else:
-    var inputs: seq[BitArray]
-    for i in 0..1:
-      inputs.add(gate.inputs[i].eval())
+    # assert gate.inputs[0].evaluated and gate.inputs[1].evaluated, "Inputs must be evaluated before gate"
 
-    gate.value = gate.function.eval(inputs[0], inputs[1])
+    gate.value = gate.function.eval(
+      gate.inputs[0].eval(),
+      gate.inputs[1].eval()
+    )
     gate.evaluated = true
 
     return gate.value
@@ -63,15 +68,13 @@ proc add_input*(graph: var Graph) =
 proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
   assert graph.gates.len == 0, "Outputs must be added before gates"
+
   let g = Gate(evaluated: false)
   for i in 0..1:
-    g.inputs[i] = sample(graph.gates)
+    g.inputs[i] = sample(graph.inputs)
   graph.outputs.add(g)
 
-proc add_random_gate*(
-  graph: var Graph,
-  lookback: int = 0,
-  ): int =
+proc add_random_gate*(graph: var Graph, lookback: int = 0) =
   # we split an edge between two existing gates with a new gate
   # but this leaves one undetermined input on the new gate. This
   # input is chosen randomly from gates before the new gate in
@@ -83,11 +86,8 @@ proc add_random_gate*(
 
   let random_input_choice: int = rand(0..<2)
   var gate_b: Gate = gate_a.inputs[random_input_choice]
-
   var new_gate: Gate = Gate(function: rand(GateFunc.low..GateFunc.high))
-
   gate_a.inputs[random_input_choice] = new_gate
-
   new_gate.inputs[0] = gate_b
 
   # This index originally referred to a location in all_gates, but I want a version
@@ -95,8 +95,8 @@ proc add_random_gate*(
   # that used to refer to output-gates, since they would be larger than the length of graph.gates.
   # If an output is chosen, and there aren't any gates in graph.gates, the index will be 0.
 
-  let localized_gate_a_idx: int = min(global_gate_a_idx.int - graph.inputs.len.int,
-      graph.gates.len)
+  let localized_gate_a_idx: int = min(global_gate_a_idx.int -
+      graph.inputs.len.int, graph.gates.len)
   var gate_c_options: seq[Gate]
   if graph.gates.len > 0:
     var gate_c_localized_idx_lower: int
@@ -116,16 +116,20 @@ proc add_random_gate*(
 
   graph.gates.insert(new_gate, localized_gate_a_idx)
 
-  return localized_gate_a_idx
-
-proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
+proc uint64_to_bool_bitseq(i: uint64, bits: int): seq[bool] =
   return collect(newSeq):
-    for c in to_bin(i, bits): c
+    for j in 0 ..< bits:
+      let mask = 1.uint64 shl j
+      (i and mask) != 0
 
-proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
-  return cast[int64](binchar_seq.join("").parse_bin_int())
+proc bool_bitseq_to_uint64(bool_bitseq: seq[bool]): uint64 =
+  var output: uint64 = 0
+  for i, bit in bool_bitseq:
+    if bit:
+      output = output or (1.uint64 shl i)
+  return output
 
-proc make_inputs*(
+proc make_input_bitarrays*(
   height: int,
   width: int,
   channels: int,
@@ -133,25 +137,26 @@ proc make_inputs*(
   y_bitcount: int,
   c_bitcount: int,
   pos_bitcount: int,
-  ): seq[seq[char]] =
-  # returns seq(h*w*c)[seq(input_bitcount)[char]]
+  ): seq[BitArray] =
+  # returns seq(h*w*c)[BitArray(input_bitcount)]
 
   let
-    y_as_bits: seq[seq[char]] = collect(newSeq):
+    y_as_bool_bitseq: seq[seq[bool]] = collect(newSeq): # seq(height)[seq(y_bitcount)]
       for y in 0 ..< height:
-        y.int64_to_binchar_seq(bits = y_bitcount)
+        y.uint64.uint64_to_bool_bitseq(bits = y_bitcount)
 
-    x_as_bits: seq[seq[char]] = collect(newSeq):
+    x_as_bool_bitseq: seq[seq[bool]] = collect(newSeq): # seq(width)[seq(x_bitcount)]
       for x in 0 ..< width:
-        x.int64_to_binchar_seq(bits = x_bitcount)
+        x.uint64.uint64_to_bool_bitseq(bits = x_bitcount)
 
-    c_as_bits: seq[seq[char]] = collect(newSeq):
+    c_as_bool_bitseq: seq[seq[bool]] = collect(newSeq): # seq(channels)[seq(c_bitcount)]
       for c in 0 ..< channels:
-        c.int64_to_binchar_seq(bits = c_bitcount)
+        c.uint64.uint64_to_bool_bitseq(bits = c_bitcount)
 
     total_iterations = width * height * channels
 
-  var input_values: seq[seq[char]]
+  var input_values: seq[seq[bool]] = newSeq[seq[bool]](
+      pos_bitcount) # seq(input_bitcount)[seq(h*w*c)[bool]]
   for idx in 0 ..< total_iterations:
     let
       c: int = idx div (height * width) mod channels
@@ -159,92 +164,53 @@ proc make_inputs*(
       x: int = idx div (1) mod width
 
     let
-      c_bits: seq[char] = c_as_bits[c]
-      x_bits: seq[char] = x_as_bits[x]
-      y_bits: seq[char] = y_as_bits[y]
+      c_bits: seq[bool] = c_as_bool_bitseq[c]
+      x_bits: seq[bool] = x_as_bool_bitseq[x]
+      y_bits: seq[bool] = y_as_bool_bitseq[y]
 
-    let pos_bits: seq[char] = x_bits & y_bits & c_bits
-    input_values.add(pos_bits)
-  return input_values
+    let pos_bits: seq[bool] = x_bits & y_bits & c_bits
 
-proc transpose_2d[T](matrix: seq[seq[T]]): seq[seq[T]] =
-  let
-    dim0: int = matrix.len
-    dim1: int = matrix[0].len
+    for i, bit in pos_bits:
+      input_values[i].add(bit)
 
-  var transposed: seq[seq[T]]
-  for i in 0 ..< dim1:
-    var row: seq[T]
-    for j in 0 ..< dim0:
-      row.add(matrix[j][i])
-    transposed.add(row)
-  return transposed
+  var input_bitarrays = newSeq[BitArray](pos_bitcount)
+  for i in 0 ..< pos_bitcount:
+    let bitseq = input_values[i]
+    let bitarray = newBitArray(bitseq.len)
+    for j, bit in bitseq:
+      if bit:
+        bitarray.unsafeSetTrue(j)
+    input_bitarrays[i] = bitarray
 
-proc pack_int64_batches*(unbatched: seq[seq[char]], bitcount: int): seq[seq[int64]] =
-  # seq(h*w*c)[seq(input_bitcount)[char]] --> seq(bitcount)[seq(num_batches)[int64]]
-  var num_batches: int = (unbatched.len - 1) div 64 + 1
-  # will have shape seq(bitcount)[seq(num_batches)[int64]]
-  var batched: seq[seq[int64]]
+  return input_bitarrays
 
-  for batch_number in 0 ..< num_batches:
-    var char_batch: seq[seq[char]] # will have shape seq(64)[seq(input_bitcount)[char]]
-    for intra_batch_idx in 0 ..< 64:
-      let idx: int = (batch_number * 64 + intra_batch_idx) mod unbatched.len
-      let single_input: seq[char] = unbatched[idx]
-      char_batch.add(single_input)
+proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
+  # seq(output_bitcount)[BitArray] --> seq(num_addresses)[uint64]
+  var unpacked: seq[uint64] = newSeq[uint64](packed[0].len)
+  for idx in 0 ..< packed[0].len:
+    var bits: seq[bool] = newSeq[bool](packed.len)
+    for i in 0 ..< packed.len:
+      bits[i] = packed[i].unsafeGet(idx)
+    unpacked[idx] = bool_bitseq_to_uint64(bits)
 
-    var int64_batch: seq[int64] # will have shape seq(bitcount)[int64]
-    for stack_of_bits in char_batch.transpose_2d(): # seq(input_bitcount)[seq(64)[char]]
-      int64_batch.add(binchar_seq_to_int64(stack_of_bits))
-
-    if batched.len == 0:
-      for i in 0..<bitcount:
-        batched.add(@[int64_batch[i]])
-    else:
-      for i in 0..<bitcount:
-        batched[i] &= int64_batch[i]
-
-  return batched
-
-
-proc unpack_int64_batches*(batched: seq[seq[int64]]): seq[seq[char]] =
-  # seq(output_bitcount)[seq(num_batches)[int64]] --> seq(num_batches * 64)[seq(output_bitcount)[char]]
-  var unbatched: seq[seq[char]] # seq(output_bitcount)[seq(num_batches * 64)[char]]
-  for bit_column in batched: # seq(num_batches)[int64]
-
-    # will have shape seq(num_batches * 64)[char]
-    var char_batch: seq[char]
-    for int64_input in bit_column: # int64
-      char_batch &= int64_input.int64_to_binchar_seq(bits = 64)
-
-    unbatched.add(char_batch)
-
-  return unbatched.transpose_2d() # seq(num_batches * 64)[seq(output_bitcount)[char]]
+  return unpacked
 
 proc outputs_to_pixie_image*(
-  outputs: seq[seq[char]], # seq(num_batches * 64)[seq(output_bitcount)[char]]
+  outputs: seq[uint64], # seq(num_addresses)[uint64]
   height: int,
   width: int,
   channels: int,
   ): pix.Image =
 
   let trimmed = outputs[0 ..< channels * height * width]
-  var bytes: seq[uint8]
-  for binchar_byte in trimmed:
-    bytes.add(
-      cast[uint8](
-        binchar_seq_to_int64(binchar_byte)
-      )
-    )
-
   var output_image = pix.new_image(width, height)
 
   for y in 0 ..< height:
     for x in 0 ..< width:
-      var rgb: seq[uint8]
+      var rgb: seq[uint8] = newSeq[uint8](3)
       for c in 0 ..< 3:
         let idx = (c * height * width) + (y * width) + x
-        rgb.add(bytes[idx])
+        rgb[c] = trimmed[idx].uint8
 
       output_image.unsafe[x, y] = pix.rgbx(rgb[0], rgb[1], rgb[2], 255)
 
