@@ -1,5 +1,6 @@
 # import std/sequtils
 import ./gate_funcs
+import ./bitty
 import std/sugar
 import std/random
 import std/strutils
@@ -10,7 +11,7 @@ randomize()
 
 type
   Gate = ref object
-    value: seq[int64]
+    value: BitArray
     evaluated: bool = false
     inputs: array[2, Gate]
     inputs_cache: array[2, Gate]
@@ -23,28 +24,21 @@ type
     outputs: seq[Gate]
     mutated_gate: Gate
 
-proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
-  return collect(newSeq):
-    for c in to_bin(i, bits): c
-
-proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
-  return cast[int64](binchar_seq.join("").parse_bin_int())
-
-proc eval(gate: Gate): seq[int64] =
+proc eval(gate: Gate): BitArray =
   if gate.evaluated:
     return gate.value
 
   else:
-    var inputs: seq[seq[int64]]
+    var inputs: seq[BitArray]
     for i in 0..1:
       inputs.add(gate.inputs[i].eval())
 
-    gate.value = gate.function.eval(inputs)
+    gate.value = gate.function.eval(inputs[0], inputs[1])
     gate.evaluated = true
 
     return gate.value
 
-proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
+proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
 
   for g in graph.gates:
     g.evaluated = false
@@ -53,19 +47,15 @@ proc eval*(graph: var Graph, batched_inputs: seq[seq[int64]]): seq[seq[int64]] =
   for i in graph.inputs:
     i.evaluated = true
 
-  var output: seq[seq[int64]]
+  var output: seq[BitArray]
 
-  for (i, v) in zip(graph.inputs, batched_inputs):
+  for (i, v) in zip(graph.inputs, bitpacked_inputs):
     i.value = v
 
   for o in graph.outputs:
     output.add(o.eval())
 
   return output
-
-proc choose_random_gate_inputs(gate: Gate, available_inputs: seq[Gate]) =
-  for i in 0..1:
-    gate.inputs[i] = sample(available_inputs)
 
 proc add_input*(graph: var Graph) =
   graph.inputs.add(Gate(evaluated: true))
@@ -74,7 +64,8 @@ proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
   assert graph.gates.len == 0, "Outputs must be added before gates"
   let g = Gate(evaluated: false)
-  choose_random_gate_inputs(g, graph.inputs)
+  for i in 0..1:
+    g.inputs[i] = sample(graph.gates)
   graph.outputs.add(g)
 
 proc add_random_gate*(
@@ -126,6 +117,13 @@ proc add_random_gate*(
   graph.gates.insert(new_gate, localized_gate_a_idx)
 
   return localized_gate_a_idx
+
+proc int64_to_binchar_seq(i: int64, bits: int): seq[char] =
+  return collect(newSeq):
+    for c in to_bin(i, bits): c
+
+proc binchar_seq_to_int64(binchar_seq: seq[char]): int64 =
+  return cast[int64](binchar_seq.join("").parse_bin_int())
 
 proc make_inputs*(
   height: int,
@@ -289,7 +287,8 @@ proc stage_input_mutation*(gate: var Gate, graph: Graph, lookback: int) =
   else:
     available_inputs = graph.inputs
 
-  choose_random_gate_inputs(gate, available_inputs)
+  for i in 0..1:
+    gate.inputs[i] = sample(available_inputs)
 
 proc undo_input_mutation*(gate: var Gate) =
   gate.inputs = gate.inputs_cache

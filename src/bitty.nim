@@ -126,6 +126,15 @@ func `or`*(a, b: BitArray): BitArray =
   for i in 0 ..< a.bits.len:
     result.bits[i] = a.bits[i] or b.bits[i]
 
+# This function was not included in the original source. I (mkaic) added it myself.
+func `xor`*(a, b: BitArray): BitArray =
+  ## Xor(s) two bit arrays returning a new bit array.
+  if a.len != b.len:
+    raise newException(ValueError, "Bit arrays are not same length")
+  result = newBitArray(a.len)
+  for i in 0 ..< a.bits.len:
+    result.bits[i] = a.bits[i] xor b.bits[i]
+
 func `not`*(a: BitArray): BitArray =
   ## Not(s) or inverts a and returns a new bit array.
   result = newBitArray(a.len)
