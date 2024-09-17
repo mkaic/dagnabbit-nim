@@ -8,7 +8,7 @@ import std/random
 
 randomize()
 
-var branos = pix.read_image("loss.jpg")
+var branos = pix.read_image("test_images/loss.jpg")
 
 const
   width = 35
@@ -30,7 +30,7 @@ echo c_bitcount
 echo input_bitcount
 
 branos = branos.resize(width, height)
-branos.write_file("original.png")
+branos.write_file("outputs/original.png")
 
 var graph = Graph()
 
@@ -94,9 +94,9 @@ for i in 1..50_000:
     echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}, Mutation type: {mutation_type}"
 
     let resized = output_image.resize(width*8, height*8)
-    resized.write_file(&"outputs/{improvement_counter:06}.png")
+    resized.write_file(&"outputs/timelapse/{improvement_counter:06}.png")
     improvement_counter += 1
-    resized.write_file(&"latest.png")
+    resized.write_file("outputs/latest.png")
 
   elif candidate_error == error:
     improved.add(0)
