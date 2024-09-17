@@ -33,6 +33,7 @@ echo "Height address bitcount: ", y_bitcount
 echo "Channel address bitcount: ", c_bitcount
 echo "Total address bitcount: ", input_bitcount
 echo "Total number of addresses: ", num_addresses
+echo "Number of gates: ", num_gates
 
 input_image = input_image.resize(width, height)
 input_image.write_file("outputs/original.png")
