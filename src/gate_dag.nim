@@ -9,25 +9,26 @@ import pixie as pix
 randomize()
 
 type
-  Gate = ref object
+  GateRef {.acyclic.} = ref GateObj
+  GateObj = object
     value*: BitArray
     evaluated*: bool
 
-    inputs*: array[2, Gate]
-    inputs_cache*: array[2, Gate]
+    inputs*: array[2, GateRef]
+    inputs_cache*: array[2, GateRef]
 
-    outputs*: seq[Gate]
+    outputs*: seq[GateRef]
 
     function*: GateFunc
     function_cache*: GateFunc
 
   Graph* = object
-    inputs*: seq[Gate]
-    gates*: seq[Gate]
-    outputs*: seq[Gate]
+    inputs*: seq[GateRef]
+    gates*: seq[GateRef]
+    outputs*: seq[GateRef]
 
 
-proc eval(gate: Gate): BitArray =
+proc eval(gate: GateRef): BitArray =
   if gate.evaluated:
     return gate.value
 
@@ -62,13 +63,13 @@ proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
   return output
 
 proc add_input*(graph: var Graph) =
-  graph.inputs.add(Gate(evaluated: true))
+  graph.inputs.add(GateRef(evaluated: true))
 
 proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
   assert graph.gates.len == 0, "Outputs must be added before gates"
 
-  let g = Gate(evaluated: false)
+  let g = GateRef(evaluated: false)
   for i in 0..1:
     g.inputs[i] = sample(graph.inputs)
   graph.outputs.add(g)
@@ -79,13 +80,13 @@ proc add_random_gate*(graph: var Graph, lookback: int = 0) =
   # input is chosen randomly from gates before the new gate in
   # the graph.
 
-  let all_gates: seq[Gate] = graph.inputs & graph.gates & graph.outputs
+  let all_gates: seq[GateRef] = graph.inputs & graph.gates & graph.outputs
   let global_gate_a_idx: int = rand(graph.inputs.len ..< all_gates.len)
-  var gate_a: Gate = all_gates[global_gate_a_idx]
+  var gate_a: GateRef = all_gates[global_gate_a_idx]
 
   let random_input_choice: int = rand(0..<2)
-  var gate_b: Gate = gate_a.inputs[random_input_choice]
-  var new_gate: Gate = Gate(function: rand(GateFunc.low..GateFunc.high))
+  var gate_b: GateRef = gate_a.inputs[random_input_choice]
+  var new_gate: GateRef = GateRef(function: rand(GateFunc.low..GateFunc.high))
   gate_a.inputs[random_input_choice] = new_gate
   new_gate.inputs[0] = gate_b
 
@@ -96,7 +97,7 @@ proc add_random_gate*(graph: var Graph, lookback: int = 0) =
 
   let localized_gate_a_idx: int = min(global_gate_a_idx.int -
       graph.inputs.len.int, graph.gates.len)
-  var gate_c_options: seq[Gate]
+  var gate_c_options: seq[GateRef]
   if graph.gates.len > 0:
     var gate_c_localized_idx_lower: int
     if lookback > 0:
@@ -231,23 +232,23 @@ proc calculate_mae*(
 
   return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
 
-proc select_random_gate*(graph: Graph): Gate =
+proc select_random_gate*(graph: Graph): GateRef =
   return 
 
-proc stage_function_mutation*(gate: var Gate) =
+proc stage_function_mutation*(gate: var GateRef) =
   gate.function_cache = gate.function
   let available_functions = collect(newSeq):
     for f in GateFunc.low .. GateFunc.high:
       if f != gate.function: f
   gate.function = sample(available_functions)
 
-proc undo_function_mutation*(gate: var Gate) =
+proc undo_function_mutation*(gate: var GateRef) =
   gate.function = gate.function_cache
 
-proc stage_input_mutation*(gate: var Gate, graph: Graph, lookback: int) =
+proc stage_input_mutation*(gate: var GateRef, graph: Graph, lookback: int) =
   gate.inputs_cache = gate.inputs
   let gate_idx: int = graph.gates.find(gate)
-  var available_inputs: seq[Gate]
+  var available_inputs: seq[GateRef]
   if lookback > 0 and gate_idx > lookback:
     available_inputs = graph.inputs & graph.gates[gate_idx - lookback ..< gate_idx]
   elif gate_idx > 0:
@@ -258,5 +259,5 @@ proc stage_input_mutation*(gate: var Gate, graph: Graph, lookback: int) =
   for i in 0..1:
     gate.inputs[i] = sample(available_inputs)
 
-proc undo_input_mutation*(gate: var Gate) =
+proc undo_input_mutation*(gate: var GateRef) =
   gate.inputs = gate.inputs_cache
