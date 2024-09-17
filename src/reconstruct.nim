@@ -11,11 +11,11 @@ import std/random
 
 randomize()
 
-var branos = pix.read_image("test_images/loss.jpg")
+var input_image = pix.read_image("test_images/branos.png")
 
 const
-  width = 35
-  height = 45
+  width = 64
+  height = 64
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -25,7 +25,7 @@ const
   output_bitcount = 8
   num_gates = 2048
   lookback = num_gates div 2
-  improvement_deque_len = 50
+  improvement_deque_len = 100
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -34,8 +34,8 @@ echo "Channel address bitcount: ", c_bitcount
 echo "Total address bitcount: ", input_bitcount
 echo "Total number of addresses: ", num_addresses
 
-branos = branos.resize(width, height)
-branos.write_file("outputs/original.png")
+input_image = input_image.resize(width, height)
+input_image.write_file("outputs/original.png")
 
 var graph = Graph()
 
@@ -63,17 +63,20 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
 
 type MutationType = enum 
   mt_FUNCTION,
-  # mt_INPUT
+  mt_INPUT
 
 var improvement_counter: int = 0
 for i in 1..50_000:
+  if improved.len > improvement_deque_len:
+    improved.delete(0)
+
   var random_gate = sample(graph.gates & graph.outputs)
   let mutation_type = rand(MutationType.low..MutationType.high)
   case mutation_type
   of mt_FUNCTION:
     random_gate.stage_function_mutation()
-  # of mt_INPUT:
-  #   random_gate.stage_input_mutation(graph, lookback)
+  of mt_INPUT:
+    random_gate.stage_input_mutation(graph, lookback)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -85,15 +88,15 @@ for i in 1..50_000:
     channels = channels
     )
 
-  let candidate_error = calculate_mae(branos, output_image)
+  let candidate_error = calculate_mae(input_image, output_image)
   if candidate_error < error:
 
     error = candidate_error
     improved.add(1)
 
     let improvement_rate = math.sum[int8](improved).float64 /
-        improved.len.float64
-    echo &"Error: {error:0.3f} at step {i}. Improvement rate: {improvement_rate:0.5f}, Mutation type: {mutation_type}"
+        improved.len.float64 * 100.0
+    echo &"Error: {error:.4f} at step {i:06}. Improvement rate: {improvement_rate:.2f}, Mutation type: {mutation_type}"
 
     let resized = output_image.resize(width*8, height*8)
     resized.write_file(&"outputs/timelapse/{improvement_counter:06}.png")
@@ -107,10 +110,5 @@ for i in 1..50_000:
     case mutation_type
     of mt_FUNCTION:
       random_gate.undo_function_mutation()
-    # of mt_INPUT:
-    #   random_gate.undo_input_mutation()
-
-  if improved.len > improvement_deque_len:
-    improved.delete(0)
-
-
+    of mt_INPUT:
+      random_gate.undo_input_mutation()
