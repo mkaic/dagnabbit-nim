@@ -14,8 +14,8 @@ randomize()
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
 
 const
-  width = 32
-  height = 48
+  width = 16
+  height = 24
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -23,7 +23,8 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 256
+  num_initial_gates = 8
+  num_final_gates = 1024
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -31,7 +32,8 @@ echo "Height address bitcount: ", y_bitcount
 echo "Channel address bitcount: ", c_bitcount
 echo "Total address bitcount: ", input_bitcount
 echo "Total number of addresses: ", num_addresses
-echo "Number of gates: ", num_gates
+echo "Number of initial gates: ", num_initial_gates
+echo "Number of final gates: ", num_final_gates
 
 input_image = input_image.resize(width, height)
 input_image.write_file("outputs/original.png")
@@ -44,7 +46,7 @@ for i in 0 ..< input_bitcount:
 for i in 0 ..< output_bitcount:
   graph.add_output()
 
-for i in 0 ..< num_gates:
+for i in 0 ..< num_initial_gates:
   graph.add_random_gate()
 
 let input_bitarrays: seq[BitArray] = make_input_bitarrays(
@@ -57,9 +59,16 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
   pos_bitcount = input_bitcount
   )
 
-var best_rmse = 255'f32
+var global_best_rmse = 255'f32
+var local_best_rmse = 255'f32
 var improvement_count = 0
+var steps_since_improvement = 0
 for i in 0..50_000:
+  if steps_since_improvement > 100 and graph.gates.len < num_final_gates:
+    echo "Adding random gate"
+    graph.add_random_gate()
+    local_best_rmse = 255'f32
+    steps_since_improvement = 0
 
   var random_gate = graph.gates.sample()
   random_gate.stage_input_mutation(graph)
@@ -77,16 +86,21 @@ for i in 0..50_000:
 
   let rmse = calculate_rmse(input_image, output_image)
 
-  if rmse < best_rmse:
-    best_rmse = rmse
-    echo &"RMSE: {best_rmse:.4f} at step {i:06}."
-    improvement_count += 1
+  if rmse < local_best_rmse:
+    local_best_rmse = rmse
+    steps_since_improvement = 0
+  elif rmse == local_best_rmse:
+    steps_since_improvement += 1
+  else:
+    steps_since_improvement += 1
+    random_gate.undo_input_mutation()
+    random_gate.undo_function_mutation()
     
+  if rmse < global_best_rmse:
+    global_best_rmse = rmse
+    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Number of gates: {graph.gates.len}"
+    improvement_count += 1
     let resized = output_image.resize(width*8, height*8)
     resized.write_file(&"outputs/timelapse/{improvement_count:06}.png")
     resized.write_file("outputs/latest.png")
-  elif rmse == best_rmse:
-    discard
-  else:
-    random_gate.undo_input_mutation()
-    random_gate.undo_function_mutation()
+
