@@ -80,7 +80,7 @@ for i in 0..50_000:
     global_best_rmse = rmse
     improvement_count += 1
     
-    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Number of gates: {graph.gates.len}"
+    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}"
     
     let resized = output_image.resize(width*8, height*8)
     resized.write_file(&"outputs/timelapse/{improvement_count:06}.png")
