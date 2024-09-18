@@ -8,3 +8,10 @@ Right now, the DAG is optimized by trial-and-error through random mutations whic
 ### Dependencies:
 * [Pixie](https://github.com/treeform/pixie) for image loading and saving.
 * [Bitty](https://github.com/treeform/bitty) (vendored in as `src/bitty` and lightly modified) for arbitrary-length bitvector data structure.
+
+### TODO
+* Smarter input choices
+* Smarter function choices
+* Some flavor of "backprop"?
+* Some flavor of global reward?
+* Allow gates to output to any gate not in their parents — right now, graphs are arbitrarily restricted to a particular flavor of DAG instead of *any* DAG.
