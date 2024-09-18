@@ -27,6 +27,6 @@ proc eval*(gf: GateFunc, a, b: BitArray): BitArray =
     of gf_XNOR:
       return not (a xor b)
     # of gf_ONE:
-    #   return bit_not(0'i64))
+    #   return not (a xor a)
     # of gf_ZERO:
-    #   return 0'i64) # 0'i64 binary representation is 64 0s in a ro)
+    #   return a xor a

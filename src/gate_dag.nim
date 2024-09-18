@@ -9,8 +9,8 @@ import pixie as pix
 randomize()
 
 type
-  GateRef {.acyclic.} = ref GateObj
-  GateObj = object
+  GateRef* {.acyclic.} = ref GateObj
+  GateObj* = object
     value*: BitArray
     evaluated*: bool
 
@@ -216,21 +216,22 @@ proc outputs_to_pixie_image*(
 
   return output_image
 
-proc calculate_mae*(
+proc calculate_rmse*(
   image1: pix.Image,
   image2: pix.Image
-  ): float64 =
+  ): float32 =
 
-  var error = 0
+  var error: float32 = 0
   for y in 0 ..< image1.height:
     for x in 0 ..< image1.width:
       let rgb1 = image1.unsafe[x, y]
       let rgb2 = image2.unsafe[x, y]
-      error += abs(rgb1.r.int - rgb2.r.int)
-      error += abs(rgb1.g.int - rgb2.g.int)
-      error += abs(rgb1.b.int - rgb2.b.int)
+      error += (rgb1.r.float32 - rgb2.r.float32)^2
+      error += (rgb1.g.float32 - rgb2.g.float32)^2
+      error += (rgb1.b.float32 - rgb2.b.float32)^2
 
-  return error.float64 / (image1.width.float64 * image1.height.float64 * 3.0)
+  error = error.float32 / (image1.width.float32 * image1.height.float32 * 3.0)
+  return math.sqrt(error)
 
 proc select_random_gate*(graph: Graph): GateRef =
   return 
