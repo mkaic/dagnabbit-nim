@@ -95,7 +95,7 @@ proc add_random_gate*(graph: var Graph) =
 
   var random_gate = (graph.gates & graph.outputs)[random_gate_idx]
   var upstream_gate = random_gate.inputs[input_edge_to_split]
-  var new_gate= GateRef(function: rand(GateFunc.low..GateFunc.high))
+  var new_gate= GateRef(function: GateFunc.gf_NAND)
 
   random_gate.replace_input(upstream_gate, new_gate)
   connect(upstream_gate, new_gate, input_idx=0)
