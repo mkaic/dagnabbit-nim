@@ -14,8 +14,8 @@ randomize()
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
 
 const
-  width = 64
-  height = 96
+  width = 8
+  height = 12
   channels = 3
 
   x_bitcount = fast_log2(width) + 1
@@ -23,7 +23,7 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 512
+  num_gates = 2048
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -71,15 +71,15 @@ for i in 0..100_000:
     round += 1
   var random_gate = (graph.gates & graph.outputs)[gate_idx]
 
-  # let mutation_type = rand(MutationType.low..MutationType.high)
-  # case mutation_type:
-  #   of mt_FUNCTION:
-  #     random_gate.stage_function_mutation()
-  #   of mt_INPUT:
-  #     random_gate.stage_input_mutation(graph)
+  let mutation_type = rand(MutationType.low..MutationType.high)
+  case mutation_type:
+    of mt_FUNCTION:
+      random_gate.stage_function_mutation()
+    of mt_INPUT:
+      random_gate.stage_input_mutation(graph)
 
   # random_gate.stage_function_mutation()
-  random_gate.stage_input_mutation(graph)
+  # random_gate.stage_input_mutation(graph)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -105,10 +105,10 @@ for i in 0..100_000:
   elif rmse == global_best_rmse:
     discard # Keep the mutation, but don't count it as an improvement
   else:
-    # case mutation_type:
-    #   of mt_FUNCTION:
-    #     random_gate.undo_function_mutation()
-    #   of mt_INPUT:
-    #     random_gate.undo_input_mutation()
+    case mutation_type:
+      of mt_FUNCTION:
+        random_gate.undo_function_mutation()
+      of mt_INPUT:
+        random_gate.undo_input_mutation()
     # random_gate.undo_function_mutation()
-    random_gate.undo_input_mutation()
+    # random_gate.undo_input_mutation()

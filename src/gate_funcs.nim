@@ -2,7 +2,7 @@ import bitty
 
 type
   GateFunc* = enum
-    # gf_AND,
+    gf_AND,
     gf_NAND,
     # gf_OR,
     # gf_NOR,
@@ -14,8 +14,8 @@ type
 proc eval*(gf: GateFunc, a, b: BitArray): BitArray =
   # inputs is seq(2)[seq(num_batches)[int64]]
   case gf
-    # of gf_AND:
-    #   return a and b
+    of gf_AND:
+      return a and b
     of gf_NAND:
       return not (a and b)
     # of gf_OR:
