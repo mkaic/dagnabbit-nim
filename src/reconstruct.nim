@@ -23,7 +23,7 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 512
+  num_gates = 1024
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -34,7 +34,7 @@ echo "Total number of addresses: ", num_addresses
 echo "Number of gates: ", num_gates
 
 input_image = input_image.resize(width, height)
-input_image.write_file("outputs/original.png")
+input_image.resize(width*8, height*8).write_file("outputs/original.png")
 
 var graph = Graph()
 
