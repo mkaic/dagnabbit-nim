@@ -78,7 +78,7 @@ for i in 0..100_000:
   #   of mt_INPUT:
   #     random_gate.stage_input_mutation(graph)
 
-  random_gate.stage_function_mutation()
+  # random_gate.stage_function_mutation()
   random_gate.stage_input_mutation(graph)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
@@ -110,5 +110,5 @@ for i in 0..100_000:
     #     random_gate.undo_function_mutation()
     #   of mt_INPUT:
     #     random_gate.undo_input_mutation()
-    random_gate.undo_function_mutation()
+    # random_gate.undo_function_mutation()
     random_gate.undo_input_mutation()
