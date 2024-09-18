@@ -57,12 +57,21 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
   pos_bitcount = input_bitcount
   )
 
+type MutationType = enum
+  mt_FUNCTION,
+  mt_INPUT
+
 var global_best_rmse = 255'f32
 var improvement_count = 0
 for i in 0..50_000:
   var random_gate = (graph.gates & graph.outputs).sample()
-  # random_gate.stage_input_mutation(graph)
-  random_gate.stage_function_mutation()
+
+  let mutation_type = rand(MutationType.low..MutationType.high)
+  case mutation_type:
+    of mt_FUNCTION:
+      random_gate.stage_function_mutation()
+    of mt_INPUT:
+      random_gate.stage_input_mutation(graph)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -80,7 +89,7 @@ for i in 0..50_000:
     global_best_rmse = rmse
     improvement_count += 1
     
-    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}"
+    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Mutation type: {mutation_type}"
     
     let resized = output_image.resize(width*8, height*8)
     resized.write_file(&"outputs/timelapse/{improvement_count:06}.png")
@@ -89,5 +98,8 @@ for i in 0..50_000:
   elif rmse == global_best_rmse:
     discard # Keep the mutation, but don't count it as an improvement
   else:
-    # random_gate.undo_input_mutation()
-    random_gate.undo_function_mutation()
+    case mutation_type:
+      of mt_FUNCTION:
+        random_gate.undo_function_mutation()
+      of mt_INPUT:
+        random_gate.undo_input_mutation()
