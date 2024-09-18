@@ -63,8 +63,13 @@ type MutationType = enum
 
 var global_best_rmse = 255'f32
 var improvement_count = 0
+var round = 0
 for i in 0..100_000:
-  var random_gate = (graph.gates & graph.outputs).sample()
+
+  let gate_idx = i mod (graph.gates & graph.outputs).len
+  if gate_idx == 0:
+    round += 1
+  var random_gate = (graph.gates & graph.outputs)[gate_idx]
 
   let mutation_type = rand(MutationType.low..MutationType.high)
   case mutation_type:
@@ -89,7 +94,7 @@ for i in 0..100_000:
     global_best_rmse = rmse
     improvement_count += 1
     
-    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Mutation type: {mutation_type}"
+    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Round: {round}. Mutation type: {mutation_type}"
     
     let resized = output_image.resize(width*8, height*8)
     resized.write_file(&"outputs/timelapse/{improvement_count:06}.png")
