@@ -4,6 +4,7 @@ import ./bitty
 import std/sugar
 import std/random
 import std/sequtils
+import std/strformat
 import pixie as pix
 
 randomize()
@@ -28,20 +29,15 @@ type
     outputs*: seq[GateRef]
 
 
-proc eval(gate: GateRef): BitArray =
-  if gate.evaluated:
-    return gate.value
-
-  else:
-    # assert gate.inputs[0].evaluated and gate.inputs[1].evaluated, "Inputs must be evaluated before gate"
+proc eval(gate: GateRef) =
+  if not gate.evaluated:
+    assert gate.inputs[0].evaluated and gate.inputs[1].evaluated, "Inputs must be evaluated before gate"
 
     gate.value = gate.function.eval(
-      gate.inputs[0].eval(),
-      gate.inputs[1].eval()
+      gate.inputs[0].value,
+      gate.inputs[1].value
     )
     gate.evaluated = true
-
-    return gate.value
 
 proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
 
@@ -57,64 +53,57 @@ proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
   for (i, v) in zip(graph.inputs, bitpacked_inputs):
     i.value = v
 
+  for i, g in graph.gates:
+    g.eval()
+
   for o in graph.outputs:
-    output.add(o.eval())
+    o.eval()
+    output.add(o.value)
 
   return output
 
 proc add_input*(graph: var Graph) =
   graph.inputs.add(GateRef(evaluated: true))
 
+proc connect*(new_input, gate: GateRef, input_idx: int) =
+  new_input.outputs.add(gate)
+  gate.inputs[input_idx] = new_input
+
+proc replace_input*(gate, old_input, new_input: GateRef) =
+  old_input.outputs.del(old_input.outputs.find(gate))
+  connect(new_input, gate, gate.inputs.find(old_input))
+
 proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
-  assert graph.gates.len == 0, "Outputs must be added before gates"
 
   let g = GateRef(evaluated: false)
   for i in 0..1:
-    g.inputs[i] = sample(graph.inputs)
+    var random_input_gate = sample(graph.inputs)
+    connect(random_input_gate, g, input_idx = i)
+    
   graph.outputs.add(g)
 
-proc add_random_gate*(graph: var Graph, lookback: int = 0) =
+proc add_random_gate*(graph: var Graph) =
   # we split an edge between two existing gates with a new gate
   # but this leaves one undetermined input on the new gate. This
   # input is chosen randomly from gates before the new gate in
   # the graph.
 
-  let all_gates: seq[GateRef] = graph.inputs & graph.gates & graph.outputs
-  let global_gate_a_idx: int = rand(graph.inputs.len ..< all_gates.len)
-  var gate_a: GateRef = all_gates[global_gate_a_idx]
+  let random_gate_idx = rand(0 ..< (graph.gates.len + graph.outputs.len))
+  let new_gate_insertion_idx = min(random_gate_idx, graph.gates.len)
+  let input_edge_to_split = rand(0..1)
 
-  let random_input_choice: int = rand(0..<2)
-  var gate_b: GateRef = gate_a.inputs[random_input_choice]
-  var new_gate: GateRef = GateRef(function: rand(GateFunc.low..GateFunc.high))
-  gate_a.inputs[random_input_choice] = new_gate
-  new_gate.inputs[0] = gate_b
+  var random_gate = (graph.gates & graph.outputs)[random_gate_idx]
+  var upstream_gate = random_gate.inputs[input_edge_to_split]
+  var new_gate= GateRef(function: rand(GateFunc.low..GateFunc.high))
 
-  # This index originally referred to a location in all_gates, but I want a version
-  # for just graph.gates now. So we subtract the number of inputs and clamp any indices
-  # that used to refer to output-gates, since they would be larger than the length of graph.gates.
-  # If an output is chosen, and there aren't any gates in graph.gates, the index will be 0.
+  random_gate.replace_input(upstream_gate, new_gate)
+  connect(upstream_gate, new_gate, input_idx=0)
 
-  let localized_gate_a_idx: int = min(global_gate_a_idx.int -
-      graph.inputs.len.int, graph.gates.len)
-  var gate_c_options: seq[GateRef]
-  if graph.gates.len > 0:
-    var gate_c_localized_idx_lower: int
-    if lookback > 0:
-      gate_c_localized_idx_lower = max(0, localized_gate_a_idx.int - lookback.int)
-    else:
-      gate_c_localized_idx_lower = 0
+  let valid_inputs = (graph.inputs & graph.gates)[0 ..< (new_gate_insertion_idx + graph.inputs.len)]
+  connect(sample(valid_inputs), new_gate, input_idx=1)
 
-    gate_c_options = graph.inputs & graph.gates[gate_c_localized_idx_lower ..< localized_gate_a_idx]
-
-  else:
-    gate_c_options = graph.inputs
-
-  let gate_c = sample(gate_c_options)
-
-  new_gate.inputs[1] = gate_c
-
-  graph.gates.insert(new_gate, localized_gate_a_idx)
+  graph.gates.insert(new_gate, new_gate_insertion_idx)
 
 proc uint64_to_bool_bitseq(i: uint64, bits: int): seq[bool] =
   return collect(newSeq):
@@ -233,32 +222,23 @@ proc calculate_rmse*(
   error = error.float32 / (image1.width.float32 * image1.height.float32 * 3.0)
   return math.sqrt(error)
 
-proc select_random_gate*(graph: Graph): GateRef =
-  return
-
-proc stage_function_mutation*(gate: var GateRef) =
+proc stage_function_mutation*(gate: GateRef) =
   gate.function_cache = gate.function
   let available_functions = collect(newSeq):
     for f in GateFunc.low .. GateFunc.high:
       if f != gate.function: f
   gate.function = sample(available_functions)
 
-proc undo_function_mutation*(gate: var GateRef) =
+proc undo_function_mutation*(gate: GateRef) =
   gate.function = gate.function_cache
 
-proc stage_input_mutation*(gate: var GateRef, graph: Graph, lookback: int) =
+proc stage_input_mutation*(gate: GateRef, graph: Graph) =
   gate.inputs_cache = gate.inputs
-  let gate_idx: int = graph.gates.find(gate)
-  var available_inputs: seq[GateRef]
-  if lookback > 0 and gate_idx > lookback:
-    available_inputs = graph.inputs & graph.gates[gate_idx - lookback ..< gate_idx]
-  elif gate_idx > 0:
-    available_inputs = graph.inputs & graph.gates[0 ..< gate_idx]
-  else:
-    available_inputs = graph.inputs
-
+  let random_gate_idx: int = graph.gates.find(gate)
+  let valid_inputs = (graph.inputs & graph.gates)[0 ..< (random_gate_idx + graph.inputs.len)]
   for i in 0..1:
-    gate.inputs[i] = sample(available_inputs)
+    gate.replace_input(gate.inputs[i], sample(valid_inputs))
 
-proc undo_input_mutation*(gate: var GateRef) =
-  gate.inputs = gate.inputs_cache
+proc undo_input_mutation*(gate: GateRef) =
+  for i in 0..1:
+    gate.replace_input(gate.inputs[i], gate.inputs_cache[i])

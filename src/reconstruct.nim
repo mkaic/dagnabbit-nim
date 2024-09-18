@@ -1,5 +1,4 @@
 import ./gate_dag
-import ./gate_funcs
 import ./bitty
 
 import pixie as pix
@@ -24,8 +23,7 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 1024
-  lookback = num_gates div 4
+  num_gates = 16
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -47,7 +45,7 @@ for i in 0 ..< output_bitcount:
   graph.add_output()
 
 for i in 0 ..< num_gates:
-  graph.add_random_gate(lookback = lookback)
+  graph.add_random_gate()
 
 let input_bitarrays: seq[BitArray] = make_input_bitarrays(
   height = height,
@@ -59,55 +57,30 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
   pos_bitcount = input_bitcount
   )
 
-
-
+var best_rmse = 255'f32
+var improvement_count = 0
 for i in 0..50_000:
 
-  let gate_idx = i mod num_gates
-
-  var output_image: pix.Image
-
-  var gate = graph.gates[gate_idx]
+  var random_gate = graph.gates.sample()
+  random_gate.stage_input_mutation(graph)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
 
-  output_image = outputs_to_pixie_image(
+  let output_image = outputs_to_pixie_image(
     output_unpacked,
     height = height,
     width = width,
     channels = channels
     )
 
-  var rmse = calculate_rmse(input_image, output_image)
+  let rmse = calculate_rmse(input_image, output_image)
 
-  var best_func = gate.function
-
-  for gate_func in GateFunc:
-    if gate_func == gate.function:
-      continue
-    gate.function = gate_func
-
-    let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
-    let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
-
-    output_image = outputs_to_pixie_image(
-      output_unpacked,
-      height = height,
-      width = width,
-      channels = channels
-      )
-
-    let candidate_rmse = calculate_rmse(input_image, output_image)
-    if candidate_rmse < rmse:
-      rmse = candidate_rmse
-      best_func = gate_func
-
-  gate.function = best_func
-
-  echo &"RMSE: {rmse:.4f} at step {i:06}. Gate idx: {gate_idx:04}. Best function: {best_func}"
-
-  if i mod 100 == 0:
+  if rmse < best_rmse:
+    best_rmse = rmse
+    echo &"RMSE: {best_rmse:.4f} at step {i:06}."
+    improvement_count += 1
+    
     let resized = output_image.resize(width*8, height*8)
-    resized.write_file(&"outputs/timelapse/{i:06}.png")
+    resized.write_file(&"outputs/timelapse/{improvement_count:06}.png")
     resized.write_file("outputs/latest.png")
