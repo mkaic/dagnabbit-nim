@@ -24,8 +24,8 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 256
-  lookback = 0
+  num_gates = 1024
+  lookback = num_gates div 4
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -63,9 +63,11 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
 
 for i in 0..50_000:
 
+  let gate_idx = i mod num_gates
+
   var output_image: pix.Image
 
-  var random_gate: GateRef = sample(graph.gates)
+  var gate = graph.gates[gate_idx]
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -79,12 +81,12 @@ for i in 0..50_000:
 
   var rmse = calculate_rmse(input_image, output_image)
 
-  var best_func = random_gate.function
+  var best_func = gate.function
 
   for gate_func in GateFunc:
-    if gate_func == random_gate.function:
+    if gate_func == gate.function:
       continue
-    random_gate.function = gate_func
+    gate.function = gate_func
 
     let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
     let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -101,9 +103,9 @@ for i in 0..50_000:
       rmse = candidate_rmse
       best_func = gate_func
 
-  random_gate.function = best_func
+  gate.function = best_func
 
-  echo &"RMSE: {rmse:.4f} at step {i:06}. Best function: {best_func}"
+  echo &"RMSE: {rmse:.4f} at step {i:06}. Gate idx: {gate_idx:04}. Best function: {best_func}"
 
   if i mod 100 == 0:
     let resized = output_image.resize(width*8, height*8)

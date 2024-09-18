@@ -234,7 +234,7 @@ proc calculate_rmse*(
   return math.sqrt(error)
 
 proc select_random_gate*(graph: Graph): GateRef =
-  return 
+  return
 
 proc stage_function_mutation*(gate: var GateRef) =
   gate.function_cache = gate.function
