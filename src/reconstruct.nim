@@ -23,7 +23,7 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 256
+  num_gates = 512
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -63,7 +63,7 @@ type MutationType = enum
 
 var global_best_rmse = 255'f32
 var improvement_count = 0
-for i in 0..50_000:
+for i in 0..100_000:
   var random_gate = (graph.gates & graph.outputs).sample()
 
   let mutation_type = rand(MutationType.low..MutationType.high)
