@@ -60,7 +60,7 @@ let input_bitarrays: seq[BitArray] = make_input_bitarrays(
 var global_best_rmse = 255'f32
 var improvement_count = 0
 for i in 0..50_000:
-  var random_gate = graph.gates.sample()
+  var random_gate = (graph.gates & graph.outputs).sample()
   random_gate.stage_input_mutation(graph)
   random_gate.stage_function_mutation()
 
