@@ -23,7 +23,7 @@ const
   c_bitcount = fast_log2(channels) + 1
   input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
-  num_gates = 16
+  num_gates = 256
   num_addresses = width * height * channels
 
 echo "Width address bitcount: ", x_bitcount
@@ -63,6 +63,7 @@ for i in 0..50_000:
 
   var random_gate = graph.gates.sample()
   random_gate.stage_input_mutation(graph)
+  random_gate.stage_function_mutation()
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -84,3 +85,8 @@ for i in 0..50_000:
     let resized = output_image.resize(width*8, height*8)
     resized.write_file(&"outputs/timelapse/{improvement_count:06}.png")
     resized.write_file("outputs/latest.png")
+  elif rmse == best_rmse:
+    discard
+  else:
+    random_gate.undo_input_mutation()
+    random_gate.undo_function_mutation()
