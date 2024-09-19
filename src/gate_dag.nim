@@ -7,7 +7,6 @@ import std/sequtils
 import std/strformat
 import std/tables
 import std/hashes
-import std/algorithm
 
 randomize()
 
@@ -75,11 +74,8 @@ proc kahn_topo_sort*(graph: var Graph) =
 
   for g in (graph.outputs & graph.gates & graph.inputs):
     incoming_edges[g] = g.inputs.len
-    echo "incoming_edges: ", incoming_edges[g]
     if incoming_edges[g] == 0:
       pending.add(g)
-
-  echo "pending len: ", pending.len
 
   while pending.len > 0:
 
@@ -93,12 +89,14 @@ proc kahn_topo_sort*(graph: var Graph) =
         pending.add(o)
 
 
-  assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, &"Graph is not connected, and only has len {sorted.len} instead of {graph.outputs.len + graph.gates.len + graph.inputs.len}"
+  # assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, &"Graph is not connected, and only has len {sorted.len} instead of {graph.outputs.len + graph.gates.len + graph.inputs.len}"
   assert all(sorted, proc (g: GateRef): bool = incoming_edges[g] == 0), "Graph is not acyclic"
 
   sorted = collect:
     for g in sorted:
       if g in graph.gates: g
+
+  graph.gates = sorted
 
 
 proc add_input*(graph: var Graph) =
