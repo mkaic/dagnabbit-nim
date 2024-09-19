@@ -71,13 +71,14 @@ for i in 0..100_000:
     mutated_gate = graph.gates[gate_idx]
   
   var local_best_rmse = 255'f32
+  var output_image: pix.Image
   for gate_func in GateFunc:
     mutated_gate.function = gate_func
 
     let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
     let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
 
-    let output_image = outputs_to_pixie_image(
+    output_image = outputs_to_pixie_image(
       output_unpacked,
       height = height,
       width = width,
@@ -90,14 +91,14 @@ for i in 0..100_000:
       local_best_rmse = rmse
       mutated_gate.function_cache = gate_func
 
-    if local_best_rmse < global_best_rmse:
-      global_best_rmse = local_best_rmse
-      global_best_image = output_image
-    
-      echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}. Gate: {mutated_gate.id:05d}. Function: {mutated_gate.function}."
-
-      output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
-      output_image.write_file("outputs/latest.png")
-      timelapse_count += 1
-
   mutated_gate.function = mutated_gate.function_cache
+
+  if local_best_rmse < global_best_rmse:
+    global_best_rmse = local_best_rmse
+    global_best_image = output_image
+
+    echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}. Gate: {mutated_gate.id:05d}. Function: {mutated_gate.function}."
+
+    output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
+    output_image.write_file("outputs/latest.png")
+    timelapse_count += 1
