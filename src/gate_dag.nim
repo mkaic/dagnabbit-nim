@@ -34,6 +34,14 @@ type
 proc hash(gate: GateRef): Hash =
   return hash(gate.id)
 
+proc connect*(new_input, gate: GateRef) =
+  new_input.outputs.add(gate)
+  gate.inputs.add(new_input)
+
+proc disconnect*(old_input, gate: GateRef) =
+  old_input.outputs.del(old_input.outputs.find(gate))
+  gate.inputs.del(gate.inputs.find(old_input))
+
 proc eval(gate: GateRef) =
   if not gate.evaluated:
     assert gate.inputs[0].evaluated and gate.inputs[1].evaluated, "Inputs must be evaluated before gate"
@@ -100,18 +108,18 @@ proc kahn_topo_sort*(graph: var Graph) =
 
   graph.gates = sorted
 
-
 proc add_input*(graph: var Graph) =
   graph.inputs.add(GateRef(id: graph.id_autoincrement))
   graph.id_autoincrement += 1
 
-proc connect*(new_input, gate: GateRef) =
-  new_input.outputs.add(gate)
-  gate.inputs.add(new_input)
+proc add_output*(graph: var Graph) =
+  var output = GateRef(id: graph.id_autoincrement)
+  graph.id_autoincrement += 1
 
-proc disconnect*(old_input, gate: GateRef) =
-  old_input.outputs.del(old_input.outputs.find(gate))
-  gate.inputs.del(gate.inputs.find(old_input))
+  for i in 0..1:
+    connect(sample(graph.inputs), output)
+
+  graph.outputs.add(output)
 
 proc descendants_mapping*(gate: GateRef, graph: Graph): BitArray =
 
@@ -139,21 +147,37 @@ proc descendants_mapping*(gate: GateRef, graph: Graph): BitArray =
   # a mapping from every gate's ID in the graph to a bool for whether it's a descendant of the query gate.
   
 proc add_random_gate*(graph: var Graph, output:bool = false) =
+  # non-wastefully adds gate by splitting an existing edge, ensuring that all gates "do something"
 
   assert graph.inputs.len > 0, "Graph must have inputs before adding gates"
-  assert not (output and graph.gates.len == 0), "Graph must have gates before adding outputs"
+
+  let split_output_gate_idx = rand(0 ..< graph.gates.len + graph.outputs.len)
+  let is_graph_output = split_output_gate_idx >= graph.gates.len
+  var split_output_gate: GateRef
+  if is_graph_output:
+    split_output_gate = graph.outputs[split_output_gate_idx - graph.gates.len]
+  else:
+    split_output_gate = graph.gates[split_output_gate_idx]
+
+  var split_input_gate = sample(split_output_gate.inputs)
 
   var new_gate= GateRef(id: graph.id_autoincrement)
   graph.id_autoincrement += 1
 
-  for i in 0..1:
-    let valid_inputs = (graph.inputs & graph.gates)
-    connect(sample(valid_inputs), new_gate)
+  disconnect(split_input_gate, split_output_gate)
+  connect(split_input_gate, new_gate)
+  connect(new_gate, split_output_gate)
 
-  if output:
-    graph.outputs.add(new_gate)
-  else:
-    graph.gates.add(new_gate)
+  let is_descendant = new_gate.descendants_mapping(graph)
+
+  let valid_gate_inputs = collect:
+    for g in graph.gates:
+      if (not is_descendant[g.id]) and (g notin new_gate.inputs): g
+  let all_valid_inputs = graph.inputs & valid_gate_inputs
+
+  connect(sample(all_valid_inputs), new_gate)
+
+  graph.gates.add(new_gate)
 
 proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
   # seq(8)[BitArray] --> seq(num_addresses)[uint64]
@@ -179,14 +203,15 @@ proc undo_function_mutation*(gate: GateRef) =
 
 proc stage_input_mutation*(gate: GateRef, graph: Graph) =
   gate.inputs_cache = gate.inputs
-  let possible_inputs = (graph.inputs & graph.gates)
-  
+
+  let is_descendant = gate.descendants_mapping(graph)
   for i in 0..1:
     let valid_inputs = collect:
-      for g in possible_inputs:
-        if not gate.descendants_mapping(graph)[g.id]: g
+      for g in graph.gates:
+        if not is_descendant[g.id]: g
 
-    var new_input_gate = sample(valid_inputs)
+    let all_valid_inputs = graph.inputs & valid_inputs
+    var new_input_gate = sample(all_valid_inputs)
 
     disconnect(gate.inputs[i], gate)
     connect(new_input_gate, gate)

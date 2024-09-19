@@ -9,18 +9,18 @@ import std/math
 import std/bitops
 import std/strutils
 import std/random
-import std/nimprof
+# import std/nimprof
 
 randomize()
 
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
 
 const
-  width = 32
-  height = 48
+  width = 128
+  height = 192
   channels = 3
   output_bitcount = 8
-  num_gates = 512
+  num_gates = 4096
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -35,11 +35,11 @@ var graph = Graph()
 for i in 0 ..< address_bitcount:
   graph.add_input()
 
+for i in 0 ..< output_bitcount:
+  graph.add_output()
+
 for i in 0 ..< num_gates:
   graph.add_random_gate()
-
-for i in 0 ..< output_bitcount:
-  graph.add_random_gate(output=true)
 
 graph.kahn_topo_sort()
 
@@ -49,23 +49,24 @@ let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   channels = channels,
   )
 
-type MutationType = enum
-  # mt_FUNCTION,
-  mt_INPUT
-
 var global_best_rmse = 255'f32
 var global_best_image: pix.Image
 var timelapse_count = 0
-for i in 0..100:
-  var random_gate = sample(graph.gates & graph.outputs)
+var round = 0
+for i in 0..100_000:
+  let gate_idx = i mod (graph.gates.len + graph.outputs.len)
+  if gate_idx == 0:
+    round += 1
 
-  let mutation_type = rand(MutationType.low..MutationType.high)
-  case mutation_type:
-    # of mt_FUNCTION:
-    #   random_gate.stage_function_mutation()
-    of mt_INPUT:
-      random_gate.stage_input_mutation(graph)
-      graph.kahn_topo_sort()
+  var mutated_gate: GateRef
+  if gate_idx >= graph.gates.len:
+    mutated_gate = graph.outputs[gate_idx - graph.gates.len]
+  else:
+    mutated_gate = graph.gates[gate_idx]
+
+  mutated_gate.stage_function_mutation()
+  # mutated_gate.stage_input_mutation(graph)
+  # graph.kahn_topo_sort()
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -82,7 +83,7 @@ for i in 0..100:
   if rmse < global_best_rmse:
     global_best_rmse = rmse
     global_best_image = output_image
-    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Mutation type: {mutation_type}"
+    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Round {round:04}"
 
     output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
     output_image.write_file("outputs/latest.png")
@@ -92,9 +93,9 @@ for i in 0..100:
     discard # Keep the mutation, but don't count it as an improvement
 
   else:
-    case mutation_type:
-      # of mt_FUNCTION:
-      #   random_gate.undo_function_mutation()
-      of mt_INPUT:
-        random_gate.undo_input_mutation()
-        graph.kahn_topo_sort()
+    mutated_gate.undo_function_mutation()
+    # mutated_gate.undo_input_mutation()
+    # graph.kahn_topo_sort()
+
+  if i mod 100 == 0:
+    echo &"Step {i:06}."
