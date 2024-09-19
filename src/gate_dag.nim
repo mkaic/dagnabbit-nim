@@ -108,12 +108,8 @@ proc connect*(new_input, gate: GateRef) =
   gate.inputs.add(new_input)
 
 proc disconnect*(old_input, gate: GateRef) =
-  old_input.outputs.del(old_input.outputs.find(gate))
-  gate.inputs.del(gate.inputs.find(old_input))
-
-proc replace_input*(gate, old_input, new_input: GateRef) =
-  disconnect(old_input, gate)
-  connect(new_input, gate)
+  old_input.outputs = filter(old_input.outputs, proc(o: GateRef): bool = (o != gate))
+  gate.inputs = filter(gate.inputs, proc(i: GateRef): bool = (i != old_input))
 
 proc add_descendants*(gate: GateRef, seen: var seq[GateRef]) =
   for o in gate.outputs:
@@ -125,42 +121,26 @@ proc descendants*(gate: GateRef): seq[GateRef] =
   var descendants = newSeq[GateRef]()
   add_descendants(gate, descendants)
   return descendants
+  
+proc add_random_gate*(graph: var Graph, output:bool = false) =
 
-proc add_output*(graph: var Graph) =
-  assert graph.inputs.len > 0, "Inputs must be added before outputs"
+  assert graph.inputs.len > 0, "Graph must have inputs before adding gates"
+  assert not (output and graph.gates.len == 0), "Graph must have gates before adding outputs"
 
-  let g = GateRef(id: graph.id_autoincrement)
-  graph.id_autoincrement += 1
-
-  for i in 0..1:
-    connect(sample(graph.inputs), g)
-    
-  graph.outputs.add(g)
-
-proc add_random_gate*(graph: var Graph) =
-  # we split an edge between two existing gates with a new gate
-  # but this leaves one undetermined input on the new gate. This
-  # input is chosen randomly from gates before the new gate in
-  # the graph.
-
-  var random_gate = sample(graph.gates & graph.outputs)
-  let input_edge_to_split = rand(0..1)
-  var upstream_gate = random_gate.inputs[input_edge_to_split]
-   
   var new_gate= GateRef(id: graph.id_autoincrement)
   graph.id_autoincrement += 1
 
-  random_gate.replace_input(upstream_gate, new_gate)
-  connect(upstream_gate, new_gate)
+  for i in 0..1:
+    let valid_inputs = collect:
+      for g in (graph.inputs & graph.gates):
+        if g notin (new_gate.descendants() & new_gate.inputs): g
 
-  let valid_inputs = collect:
-    for g in (graph.inputs & graph.gates):
-      if g notin (new_gate.descendants() & new_gate.inputs): g
-  
-  var random_second_input = sample(valid_inputs)
-  connect(random_second_input, new_gate)
+    connect(sample(valid_inputs), new_gate)
 
-  graph.gates.add(new_gate)
+  if output:
+    graph.outputs.add(new_gate)
+  else:
+    graph.gates.add(new_gate)
 
 proc boolseq_to_uint64(boolseq: seq[bool]): uint64 =
   var output: uint64 = 0
@@ -193,13 +173,19 @@ proc undo_function_mutation*(gate: GateRef) =
 proc stage_input_mutation*(gate: GateRef, graph: Graph) =
   gate.inputs_cache = gate.inputs
   let possible_inputs = (graph.inputs & graph.gates)
+
   for i in 0..1:
+
     let valid_inputs = collect:
       for g in possible_inputs:
         if g notin (gate.descendants() & gate.inputs): g
-    var input_gate = sample(valid_inputs)
-    gate.replace_input(gate.inputs[i], input_gate)
+
+    var new_input_gate = sample(valid_inputs)
+
+    disconnect(gate.inputs[i], gate)
+    connect(new_input_gate, gate)
 
 proc undo_input_mutation*(gate: GateRef) =
   for i in 0..1:
-    gate.replace_input(gate.inputs[i], gate.inputs_cache[i])
+    disconnect(gate.inputs[i], gate)
+    connect(gate.inputs_cache[i], gate)

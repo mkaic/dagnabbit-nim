@@ -36,11 +36,11 @@ var graph = Graph()
 for i in 0 ..< address_bitcount:
   graph.add_input()
 
-for i in 0 ..< output_bitcount:
-  graph.add_output()
-
 for i in 0 ..< num_gates:
   graph.add_random_gate()
+
+for i in 0 ..< output_bitcount:
+  graph.add_random_gate(output=true)
 
 graph.kahn_topo_sort()
 
