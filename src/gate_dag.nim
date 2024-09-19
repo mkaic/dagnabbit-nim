@@ -88,8 +88,11 @@ proc kahn_topo_sort*(graph: var Graph) =
       if incoming_edges[o] == 0:
         pending.add(o)
 
-  assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, &"Graph is not connected, and only has len {sorted.len} instead of {graph.outputs.len + graph.gates.len + graph.inputs.len}"
-  assert all(sorted, proc (g: GateRef): bool = incoming_edges[g] == 0), "Graph is not acyclic"
+  let cyclic = collect:
+    for g in (graph.outputs & graph.gates & graph.inputs):
+      if incoming_edges[g] != 0: &"{g.inputs.mapIt(it.id)} --> {g.id}"
+  assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, &"Graph is not connected, and only has len {sorted.len} instead of {graph.outputs.len + graph.gates.len + graph.inputs.len}. Unsorted gates: {cyclic}"
+  assert all(sorted, proc (g: GateRef): bool = incoming_edges[g] == 0), &"Graph is not acyclic. Cyclic gates: {cyclic}"
 
   sorted = collect:
     for g in sorted:
@@ -110,18 +113,30 @@ proc disconnect*(old_input, gate: GateRef) =
   old_input.outputs.del(old_input.outputs.find(gate))
   gate.inputs.del(gate.inputs.find(old_input))
 
-proc add_descendants*(gate: GateRef, seen: var seq[GateRef]) =
-  for o in gate.outputs:
-    if o notin seen:
-      seen.add(o)
-      add_descendants(o, seen)
+proc descendants_mapping*(gate: GateRef, graph: Graph): BitArray =
 
-proc descendants*(gate: GateRef): seq[GateRef] =
+  var descendants = newBitArray(graph.id_autoincrement + 1)
+  descendants.clear()
+
   # gate is counted as one of its own descendants
   # since connecting to itself would create a cycle
-  var descendants = @[gate]
-  add_descendants(gate, descendants)
-  return descendants
+  descendants.unsafeSetTrue(gate.id)
+
+  var pending = newSeq[GateRef]()
+  pending.add(gate)
+
+  while pending.len > 0:
+    let next_gate = pending[0]
+    
+    for o in next_gate.outputs:
+      if not descendants[o.id]:
+        descendants.unsafeSetTrue(o.id)
+        pending.add(o)
+
+    pending.del(0)
+
+  return descendants 
+  # a mapping from every gate's ID in the graph to a bool for whether it's a descendant of the query gate.
   
 proc add_random_gate*(graph: var Graph, output:bool = false) =
 
@@ -132,10 +147,7 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
   graph.id_autoincrement += 1
 
   for i in 0..1:
-    let valid_inputs = collect:
-      for g in (graph.inputs & graph.gates):
-        if g notin new_gate.descendants(): g
-
+    let valid_inputs = (graph.inputs & graph.gates)
     connect(sample(valid_inputs), new_gate)
 
   if output:
@@ -170,10 +182,9 @@ proc stage_input_mutation*(gate: GateRef, graph: Graph) =
   let possible_inputs = (graph.inputs & graph.gates)
   
   for i in 0..1:
-
     let valid_inputs = collect:
       for g in possible_inputs:
-        if g notin gate.descendants(): g
+        if not gate.descendants_mapping(graph)[g.id]: g
 
     var new_input_gate = sample(valid_inputs)
 

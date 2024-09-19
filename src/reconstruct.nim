@@ -11,8 +11,6 @@ import std/strutils
 import std/random
 import std/nimprof
 
-# TODO: FIX KAHN TOPO SORT AND DESCENDANT-FINDING?
-
 randomize()
 
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
@@ -22,7 +20,7 @@ const
   height = 48
   channels = 3
   output_bitcount = 8
-  num_gates = 32
+  num_gates = 512
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -52,19 +50,19 @@ let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   )
 
 type MutationType = enum
-  mt_FUNCTION,
+  # mt_FUNCTION,
   mt_INPUT
 
 var global_best_rmse = 255'f32
 var global_best_image: pix.Image
 var timelapse_count = 0
-for i in 0..1000:
+for i in 0..100:
   var random_gate = sample(graph.gates & graph.outputs)
 
   let mutation_type = rand(MutationType.low..MutationType.high)
   case mutation_type:
-    of mt_FUNCTION:
-      random_gate.stage_function_mutation()
+    # of mt_FUNCTION:
+    #   random_gate.stage_function_mutation()
     of mt_INPUT:
       random_gate.stage_input_mutation(graph)
       graph.kahn_topo_sort()
@@ -95,8 +93,8 @@ for i in 0..1000:
 
   else:
     case mutation_type:
-      of mt_FUNCTION:
-        random_gate.undo_function_mutation()
+      # of mt_FUNCTION:
+      #   random_gate.undo_function_mutation()
       of mt_INPUT:
         random_gate.undo_input_mutation()
         graph.kahn_topo_sort()

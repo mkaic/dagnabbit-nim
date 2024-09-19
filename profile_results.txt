@@ -1,358 +1,427 @@
 total executions of each stack trace:
-Entry: 1/114 Calls: 257/910 = 28.24% [sum: 257; 257/910 = 28.24%]
-  gate_dag.nim: unpack_bitarrays_to_uint64 461/910 = 50.66%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 2/114 Calls: 193/910 = 21.21% [sum: 450; 450/910 = 49.45%]
-  bitty.nim: unsafeGet 193/910 = 21.21%
-  gate_dag.nim: unpack_bitarrays_to_uint64 461/910 = 50.66%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 3/114 Calls: 73/910 = 8.02% [sum: 523; 523/910 = 57.47%]
-  system.nim: newSeq 150/910 = 16.48%
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 4/114 Calls: 59/910 = 6.48% [sum: 582; 582/910 = 63.96%]
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 5/114 Calls: 27/910 = 2.97% [sum: 609; 609/910 = 66.92%]
-  math.nim: ^ 27/910 = 2.97%
-  image_utils.nim: calculate_rmse 58/910 = 6.37%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 6/114 Calls: 26/910 = 2.86% [sum: 635; 635/910 = 69.78%]
-  arithmetics.nim: += 26/910 = 2.86%
-  image_utils.nim: calculate_rmse 58/910 = 6.37%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 7/114 Calls: 20/910 = 2.20% [sum: 655; 655/910 = 71.98%]
-  system.nim: newSeq 150/910 = 16.48%
-  lz77.nim: encodeLz77 26/910 = 2.86%
-  deflate.nim: deflate 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  png.nim: encodePng 48/910 = 5.27%
-  png.nim: encodePng 48/910 = 5.27%
-  pixie.nim: encodeImage 48/910 = 5.27%
-  pixie.nim: writeFile 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 8/114 Calls: 14/910 = 1.54% [sum: 669; 669/910 = 73.52%]
-  indices.nim: [] 24/910 = 2.64%
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 9/114 Calls: 12/910 = 1.32% [sum: 681; 681/910 = 74.84%]
-  system.nim: align 15/910 = 1.65%
-  system.nim: newSeq 150/910 = 16.48%
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 10/114 Calls: 11/910 = 1.21% [sum: 692; 692/910 = 76.04%]
-  system.nim: newSeq 150/910 = 16.48%
-  gate_dag.nim: unpack_bitarrays_to_uint64 461/910 = 50.66%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 11/114 Calls: 9/910 = 0.99% [sum: 701; 701/910 = 77.03%]
-  bitty.nim: and 16/910 = 1.76%
-  gate_funcs.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 12/114 Calls: 9/910 = 0.99% [sum: 710; 710/910 = 78.02%]
-  bitty.nim: not 15/910 = 1.65%
-  gate_funcs.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 13/114 Calls: 9/910 = 0.99% [sum: 719; 719/910 = 79.01%]
-  jpeg.nim: clampByte 15/910 = 1.65%
-  jpeg.nim: yCbCrToRgbx 16/910 = 1.76%
-  jpeg.nim: buildImage 33/910 = 3.63%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 14/114 Calls: 8/910 = 0.88% [sum: 727; 727/910 = 79.89%]
-  system.nim: newSeq 150/910 = 16.48%
-  common.nim: newImage 14/910 = 1.54%
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 15/114 Calls: 7/910 = 0.77% [sum: 734; 734/910 = 80.66%]
-  system.nim: newSeq 150/910 = 16.48%
-  bitty.nim: newBitArray 16/910 = 1.76%
-  bitty.nim: and 16/910 = 1.76%
-  gate_funcs.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 16/114 Calls: 7/910 = 0.77% [sum: 741; 741/910 = 81.43%]
-  jpeg.nim: yCbCrToRgbx 16/910 = 1.76%
-  jpeg.nim: buildImage 33/910 = 3.63%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 17/114 Calls: 7/910 = 0.77% [sum: 748; 748/910 = 82.20%]
-  jpeg.nim: buildImage 33/910 = 3.63%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 18/114 Calls: 6/910 = 0.66% [sum: 754; 754/910 = 82.86%]
-  jpeg.nim: clampByte 15/910 = 1.65%
-  jpeg.nim: idctBlock 6/910 = 0.66%
-  jpeg.nim: quantizationAndIDCTPass 6/910 = 0.66%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 19/114 Calls: 5/910 = 0.55% [sum: 759; 759/910 = 83.41%]
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: descendants 21/910 = 2.31%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 20/114 Calls: 5/910 = 0.55% [sum: 764; 764/910 = 83.96%]
-  system.nim: newSeq 150/910 = 16.48%
-  bitty.nim: newBitArray 16/910 = 1.76%
-  bitty.nim: not 15/910 = 1.65%
-  gate_funcs.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 21/114 Calls: 5/910 = 0.55% [sum: 769; 769/910 = 84.51%]
-  image_utils.nim: calculate_rmse 58/910 = 6.37%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 22/114 Calls: 4/910 = 0.44% [sum: 773; 773/910 = 84.95%]
-  internal.nim: read64 4/910 = 0.44%
-  internal.nim: determineMatchLength 4/910 = 0.44%
-  lz77.nim: encodeLz77 26/910 = 2.86%
-  deflate.nim: deflate 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  png.nim: encodePng 48/910 = 5.27%
-  png.nim: encodePng 48/910 = 5.27%
-  pixie.nim: encodeImage 48/910 = 5.27%
-  pixie.nim: writeFile 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 23/114 Calls: 4/910 = 0.44% [sum: 777; 777/910 = 85.38%]
-  system.nim: newSeq 150/910 = 16.48%
-  common.nim: newImage 14/910 = 1.54%
-  jpeg.nim: buildImage 33/910 = 3.63%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 24/114 Calls: 3/910 = 0.33% [sum: 780; 780/910 = 85.71%]
-  arithmetics.nim: -% 10/910 = 1.10%
-  orc.nim: nimDecRefIsLastDyn 13/910 = 1.43%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 25/114 Calls: 3/910 = 0.33% [sum: 783; 783/910 = 86.04%]
-  colortypes.nim: rgbx 3/910 = 0.33%
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 26/114 Calls: 3/910 = 0.33% [sum: 786; 786/910 = 86.37%]
-  orc.nim: nimDecRefIsLastDyn 13/910 = 1.43%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 27/114 Calls: 3/910 = 0.33% [sum: 789; 789/910 = 86.70%]
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 28/114 Calls: 3/910 = 0.33% [sum: 792; 792/910 = 87.03%]
-  hashcommon.nim: isFilled 4/910 = 0.44%
-  hashcommon.nim: rawGet 11/910 = 1.21%
-  tables.nim: [] 24/910 = 2.64%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 29/114 Calls: 3/910 = 0.33% [sum: 795; 795/910 = 87.36%]
-  system.nim: find 18/910 = 1.98%
-  system.nim: contains 21/910 = 2.31%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 30/114 Calls: 3/910 = 0.33% [sum: 798; 798/910 = 87.69%]
-  sequtils.nim: deduplicate 11/910 = 1.21%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 31/114 Calls: 3/910 = 0.33% [sum: 801; 801/910 = 88.02%]
-  system.nim: find 18/910 = 1.98%
-  system.nim: contains 21/910 = 2.31%
-  sequtils.nim: deduplicate 11/910 = 1.21%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 32/114 Calls: 3/910 = 0.33% [sum: 804; 804/910 = 88.35%]
-  system.nim: find 18/910 = 1.98%
-  system.nim: contains 21/910 = 2.31%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 33/114 Calls: 3/910 = 0.33% [sum: 807; 807/910 = 88.68%]
-  alloc.nim: mappingInsert 3/910 = 0.33%
-  alloc.nim: addChunkToMatrix 3/910 = 0.33%
-  alloc.nim: freeBigChunk 4/910 = 0.44%
-  alloc.nim: rawDealloc 4/910 = 0.44%
-  alloc.nim: dealloc 4/910 = 0.44%
-  image_utils.nim: outputs_to_pixie_image 173/910 = 19.01%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 34/114 Calls: 2/910 = 0.22% [sum: 809; 809/910 = 88.90%]
-  orc.nim: rememberCycle 5/910 = 0.55%
-  orc.nim: nimDecRefIsLastCyclicStatic 9/910 = 0.99%
-  heapqueue.nim: siftdownToBottom 5/910 = 0.55%
-  heapqueue.nim: pop 6/910 = 0.66%
-  deflate.nim: buildTree 13/910 = 1.43%
-  deflate.nim: huffmanCodes 17/910 = 1.87%
-  deflate.nim: deflate 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  png.nim: encodePng 48/910 = 5.27%
-  png.nim: encodePng 48/910 = 5.27%
-  pixie.nim: encodeImage 48/910 = 5.27%
-  pixie.nim: writeFile 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 35/114 Calls: 2/910 = 0.22% [sum: 811; 811/910 = 89.12%]
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 36/114 Calls: 2/910 = 0.22% [sum: 813; 813/910 = 89.34%]
-  system.nim: align 15/910 = 1.65%
-  sequtils.nim: deduplicate 11/910 = 1.21%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 37/114 Calls: 2/910 = 0.22% [sum: 815; 815/910 = 89.56%]
-  arithmetics.nim: -% 10/910 = 1.10%
-  orc.nim: nimDecRefIsLastDyn 13/910 = 1.43%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 38/114 Calls: 2/910 = 0.22% [sum: 817; 817/910 = 89.78%]
-  hashcommon.nim: rawGet 11/910 = 1.21%
-  tables.nim: []= 9/910 = 0.99%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 39/114 Calls: 2/910 = 0.22% [sum: 819; 819/910 = 90.00%]
-  system.nim: newSeq 150/910 = 16.48%
-  bitty.nim: newBitArray 16/910 = 1.76%
-  bitty.nim: or 5/910 = 0.55%
-  gate_funcs.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 40/114 Calls: 2/910 = 0.22% [sum: 821; 821/910 = 90.22%]
-  bitty.nim: or 5/910 = 0.55%
-  gate_funcs.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 41/114 Calls: 2/910 = 0.22% [sum: 823; 823/910 = 90.44%]
-  system.nim: newSeq 150/910 = 16.48%
-  jpeg.nim: newMask 4/910 = 0.44%
-  jpeg.nim: magnifyYBy2 4/910 = 0.44%
-  jpeg.nim: buildImage 33/910 = 3.63%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 42/114 Calls: 2/910 = 0.22% [sum: 825; 825/910 = 90.66%]
-  bitops.nim: repeatBits 2/910 = 0.22%
-  bitops.nim: reverseBits 2/910 = 0.22%
-  deflate.nim: huffmanCodes 17/910 = 1.87%
-  deflate.nim: deflate 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  png.nim: encodePng 48/910 = 5.27%
-  png.nim: encodePng 48/910 = 5.27%
-  pixie.nim: encodeImage 48/910 = 5.27%
-  pixie.nim: writeFile 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 43/114 Calls: 2/910 = 0.22% [sum: 827; 827/910 = 90.88%]
-  jpeg.nim: magnifyYBy2 4/910 = 0.44%
-  jpeg.nim: buildImage 33/910 = 3.63%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 44/114 Calls: 2/910 = 0.22% [sum: 829; 829/910 = 91.10%]
-  jpeg.nim: receiveExtend 4/910 = 0.44%
-  jpeg.nim: decodeRegularBlock 7/910 = 0.77%
-  jpeg.nim: decodeBlock 7/910 = 0.77%
-  jpeg.nim: decodeBlocks 7/910 = 0.77%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 45/114 Calls: 2/910 = 0.22% [sum: 831; 831/910 = 91.32%]
-  internal.nim: write64 2/910 = 0.22%
-  bitstreams.nim: addBits 2/910 = 0.22%
-  deflate.nim: deflate 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  png.nim: encodePng 48/910 = 5.27%
-  png.nim: encodePng 48/910 = 5.27%
-  pixie.nim: encodeImage 48/910 = 5.27%
-  pixie.nim: writeFile 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 46/114 Calls: 2/910 = 0.22% [sum: 833; 833/910 = 91.54%]
-  tables.nim: [] 24/910 = 2.64%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 47/114 Calls: 2/910 = 0.22% [sum: 835; 835/910 = 91.76%]
-  system.nim: newSeq 150/910 = 16.48%
-  common.nim: newImage 14/910 = 1.54%
-  sse2.nim: minifyBy2Sse2 2/910 = 0.22%
-  images.nim: minifyBy2 2/910 = 0.22%
-  images.nim: draw 2/910 = 0.22%
-  images.nim: resize 2/910 = 0.22%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 48/114 Calls: 2/910 = 0.22% [sum: 837; 837/910 = 91.98%]
-  arc.nim: nimRawDispose 4/910 = 0.44%
-  gate_dag.nim: eval 44/910 = 4.84%
-  gate_dag.nim: eval 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 49/114 Calls: 2/910 = 0.22% [sum: 839; 839/910 = 92.20%]
-  system.nim: find 18/910 = 1.98%
-  system.nim: contains 21/910 = 2.31%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: descendants 21/910 = 2.31%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 50/114 Calls: 2/910 = 0.22% [sum: 841; 841/910 = 92.42%]
-  jpeg.nim: decodeRegularBlock 7/910 = 0.77%
-  jpeg.nim: decodeBlock 7/910 = 0.77%
-  jpeg.nim: decodeBlocks 7/910 = 0.77%
-  jpeg.nim: decodeJpeg 48/910 = 5.27%
-  pixie.nim: decodeImage 48/910 = 5.27%
-  pixie.nim: readImage 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 51/114 Calls: 2/910 = 0.22% [sum: 843; 843/910 = 92.64%]
-  system.nim: find 18/910 = 1.98%
-  system.nim: contains 21/910 = 2.31%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: descendants 21/910 = 2.31%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 52/114 Calls: 2/910 = 0.22% [sum: 845; 845/910 = 92.86%]
-  system.nim: find 18/910 = 1.98%
-  system.nim: contains 21/910 = 2.31%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: add_descendants 20/910 = 2.20%
-  gate_dag.nim: descendants 21/910 = 2.31%
-  gate_dag.nim: stage_input_mutation 28/910 = 3.08%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 53/114 Calls: 2/910 = 0.22% [sum: 847; 847/910 = 93.08%]
-  sequtils.nim: all 4/910 = 0.44%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 54/114 Calls: 2/910 = 0.22% [sum: 849; 849/910 = 93.30%]
-  orc.nim: nimDecRefIsLastCyclicStatic 9/910 = 0.99%
-  heapqueue.nim: siftup 4/910 = 0.44%
-  heapqueue.nim: siftdownToBottom 5/910 = 0.55%
-  heapqueue.nim: pop 6/910 = 0.66%
-  deflate.nim: buildTree 13/910 = 1.43%
-  deflate.nim: huffmanCodes 17/910 = 1.87%
-  deflate.nim: deflate 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  zippy.nim: compress 46/910 = 5.05%
-  png.nim: encodePng 48/910 = 5.27%
-  png.nim: encodePng 48/910 = 5.27%
-  pixie.nim: encodeImage 48/910 = 5.27%
-  pixie.nim: writeFile 48/910 = 5.27%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
-Entry: 55/114 Calls: 2/910 = 0.22% [sum: 851; 851/910 = 93.52%]
-  arc.nim: nimIncRef 5/910 = 0.55%
-  gate_dag.nim: kahn_topo_sort 44/910 = 4.84%
-  reconstruct.nim: reconstruct 909/910 = 99.89%
+Entry: 1/131 Calls: 78/826 = 9.44% [sum: 78; 78/826 = 9.44%]
+  system.nim: del 170/826 = 20.58%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 2/131 Calls: 67/826 = 8.11% [sum: 145; 145/826 = 17.55%]
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 3/131 Calls: 56/826 = 6.78% [sum: 201; 201/826 = 24.33%]
+  system.nim: find 57/826 = 6.90%
+  system.nim: contains 59/826 = 7.14%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 4/131 Calls: 36/826 = 4.36% [sum: 237; 237/826 = 28.69%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 5/131 Calls: 34/826 = 4.12% [sum: 271; 271/826 = 32.81%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  arc.nim: nimIncRef 83/826 = 10.05%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 6/131 Calls: 31/826 = 3.75% [sum: 302; 302/826 = 36.56%]
+  arc.nim: nimIncRef 83/826 = 10.05%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 7/131 Calls: 25/826 = 3.03% [sum: 327; 327/826 = 39.59%]
+  system.nim: reset 49/826 = 5.93%
+  system.nim: del 170/826 = 20.58%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 8/131 Calls: 25/826 = 3.03% [sum: 352; 352/826 = 42.62%]
+  bitty.nim: [] 81/826 = 9.81%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 9/131 Calls: 23/826 = 2.78% [sum: 375; 375/826 = 45.40%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  system.nim: del 170/826 = 20.58%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 10/131 Calls: 23/826 = 2.78% [sum: 398; 398/826 = 48.18%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  system.nim: reset 49/826 = 5.93%
+  system.nim: del 170/826 = 20.58%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 11/131 Calls: 21/826 = 2.54% [sum: 419; 419/826 = 50.73%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 12/131 Calls: 21/826 = 2.54% [sum: 440; 440/826 = 53.27%]
+  gate_dag.nim: unpack_bitarrays_to_uint64 40/826 = 4.84%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 13/131 Calls: 19/826 = 2.30% [sum: 459; 459/826 = 55.57%]
+  bitty.nim: unsafeGet 39/826 = 4.72%
+  gate_dag.nim: unpack_bitarrays_to_uint64 40/826 = 4.84%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 14/131 Calls: 19/826 = 2.30% [sum: 478; 478/826 = 57.87%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  system.nim: del 170/826 = 20.58%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 15/131 Calls: 18/826 = 2.18% [sum: 496; 496/826 = 60.05%]
+  bitty.nim: unsafeGet 39/826 = 4.72%
+  bitty.nim: [] 81/826 = 9.81%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 16/131 Calls: 15/826 = 1.82% [sum: 511; 511/826 = 61.86%]
+  bitty.nim: unsafeSetTrue 15/826 = 1.82%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 17/131 Calls: 15/826 = 1.82% [sum: 526; 526/826 = 63.68%]
+  system.nim: newSeq 62/826 = 7.51%
+  bitty.nim: newBitArray 37/826 = 4.48%
+  bitty.nim: and 27/826 = 3.27%
+  gate_funcs.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 18/131 Calls: 13/826 = 1.57% [sum: 539; 539/826 = 65.25%]
+  jpeg.nim: clampByte 18/826 = 2.18%
+  jpeg.nim: yCbCrToRgbx 22/826 = 2.66%
+  jpeg.nim: buildImage 34/826 = 4.12%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 19/131 Calls: 12/826 = 1.45% [sum: 551; 551/826 = 66.71%]
+  system.nim: newSeq 62/826 = 7.51%
+  bitty.nim: newBitArray 37/826 = 4.48%
+  bitty.nim: not 22/826 = 2.66%
+  gate_funcs.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 20/131 Calls: 11/826 = 1.33% [sum: 562; 562/826 = 68.04%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 21/131 Calls: 10/826 = 1.21% [sum: 572; 572/826 = 69.25%]
+  bitty.nim: not 22/826 = 2.66%
+  gate_funcs.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 22/131 Calls: 10/826 = 1.21% [sum: 582; 582/826 = 70.46%]
+  image_utils.nim: outputs_to_pixie_image 25/826 = 3.03%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 23/131 Calls: 10/826 = 1.21% [sum: 592; 592/826 = 71.67%]
+  bitty.nim: and 27/826 = 3.27%
+  gate_funcs.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 24/131 Calls: 10/826 = 1.21% [sum: 602; 602/826 = 72.88%]
+  system.nim: newSeq 62/826 = 7.51%
+  image_utils.nim: outputs_to_pixie_image 25/826 = 3.03%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 25/131 Calls: 9/826 = 1.09% [sum: 611; 611/826 = 73.97%]
+  jpeg.nim: yCbCrToRgbx 22/826 = 2.66%
+  jpeg.nim: buildImage 34/826 = 4.12%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 26/131 Calls: 8/826 = 0.97% [sum: 619; 619/826 = 74.94%]
+  sequtils.nim: deduplicate 18/826 = 2.18%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 27/131 Calls: 8/826 = 0.97% [sum: 627; 627/826 = 75.91%]
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 28/131 Calls: 8/826 = 0.97% [sum: 635; 635/826 = 76.88%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  system.nim: & 23/826 = 2.78%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 29/131 Calls: 7/826 = 0.85% [sum: 642; 642/826 = 77.72%]
+  bitty.nim: clear 7/826 = 0.85%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 30/131 Calls: 6/826 = 0.73% [sum: 648; 648/826 = 78.45%]
+  system.nim: & 23/826 = 2.78%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 31/131 Calls: 5/826 = 0.61% [sum: 653; 653/826 = 79.06%]
+  system.nim: newSeq 62/826 = 7.51%
+  common.nim: newImage 7/826 = 0.85%
+  jpeg.nim: buildImage 34/826 = 4.12%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 32/131 Calls: 5/826 = 0.61% [sum: 658; 658/826 = 79.66%]
+  gate_dag.nim: hash 14/826 = 1.69%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 33/131 Calls: 5/826 = 0.61% [sum: 663; 663/826 = 80.27%]
+  jpeg.nim: clampByte 18/826 = 2.18%
+  jpeg.nim: idctBlock 5/826 = 0.61%
+  jpeg.nim: quantizationAndIDCTPass 5/826 = 0.61%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 34/131 Calls: 4/826 = 0.48% [sum: 667; 667/826 = 80.75%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  arc.nim: nimIncRef 83/826 = 10.05%
+  sequtils.nim: deduplicate 18/826 = 2.18%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 35/131 Calls: 4/826 = 0.48% [sum: 671; 671/826 = 81.23%]
+  hashes.nim: hiXorLo 5/826 = 0.61%
+  hashes.nim: hashWangYi1 7/826 = 0.85%
+  hashes.nim: hash 14/826 = 1.69%
+  gate_dag.nim: hash 14/826 = 1.69%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 36/131 Calls: 4/826 = 0.48% [sum: 675; 675/826 = 81.72%]
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 37/131 Calls: 4/826 = 0.48% [sum: 679; 679/826 = 82.20%]
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 38/131 Calls: 4/826 = 0.48% [sum: 683; 683/826 = 82.69%]
+  system.nim: newSeq 62/826 = 7.51%
+  bitty.nim: newBitArray 37/826 = 4.48%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 39/131 Calls: 4/826 = 0.48% [sum: 687; 687/826 = 83.17%]
+  hashcommon.nim: nextTry 8/826 = 0.97%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 40/131 Calls: 3/826 = 0.36% [sum: 690; 690/826 = 83.54%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 41/131 Calls: 3/826 = 0.36% [sum: 693; 693/826 = 83.90%]
+  arc.nim: nimIncRef 83/826 = 10.05%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 42/131 Calls: 3/826 = 0.36% [sum: 696; 696/826 = 84.26%]
+  tables.nim: enlarge 12/826 = 1.45%
+  tables.nim: []= 20/826 = 2.42%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 43/131 Calls: 3/826 = 0.36% [sum: 699; 699/826 = 84.62%]
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 44/131 Calls: 3/826 = 0.36% [sum: 702; 702/826 = 84.99%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  system.nim: & 23/826 = 2.78%
+  gate_dag.nim: add_random_gate 13/826 = 1.57%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 45/131 Calls: 3/826 = 0.36% [sum: 705; 705/826 = 85.35%]
+  math.nim: ^ 3/826 = 0.36%
+  image_utils.nim: calculate_rmse 7/826 = 0.85%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 46/131 Calls: 3/826 = 0.36% [sum: 708; 708/826 = 85.71%]
+  arithmetics.nim: += 3/826 = 0.36%
+  image_utils.nim: calculate_rmse 7/826 = 0.85%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 47/131 Calls: 3/826 = 0.36% [sum: 711; 711/826 = 86.08%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  arc.nim: nimDestroyAndDispose 4/826 = 0.48%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 48/131 Calls: 3/826 = 0.36% [sum: 714; 714/826 = 86.44%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  gate_dag.nim: add_random_gate 13/826 = 1.57%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 49/131 Calls: 3/826 = 0.36% [sum: 717; 717/826 = 86.80%]
+  system.nim: newSeq 62/826 = 7.51%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 50/131 Calls: 2/826 = 0.24% [sum: 719; 719/826 = 87.05%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  tables.nim: enlarge 12/826 = 1.45%
+  tables.nim: []= 20/826 = 2.42%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 51/131 Calls: 2/826 = 0.24% [sum: 721; 721/826 = 87.29%]
+  bitty.nim: unsafeGet 39/826 = 4.72%
+  bitty.nim: [] 81/826 = 9.81%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 52/131 Calls: 2/826 = 0.24% [sum: 723; 723/826 = 87.53%]
+  system.nim: align 11/826 = 1.33%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 53/131 Calls: 2/826 = 0.24% [sum: 725; 725/826 = 87.77%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  arc.nim: nimDecRefIsLast 5/826 = 0.61%
+  gate_funcs.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  gate_dag.nim: eval 55/826 = 6.66%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 54/131 Calls: 2/826 = 0.24% [sum: 727; 727/826 = 88.01%]
+  indices.nim: [] 81/826 = 9.81%
+  image_utils.nim: outputs_to_pixie_image 25/826 = 3.03%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 55/131 Calls: 2/826 = 0.24% [sum: 729; 729/826 = 88.26%]
+  hashcommon.nim: isFilled 6/826 = 0.73%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 56/131 Calls: 2/826 = 0.24% [sum: 731; 731/826 = 88.50%]
+  jpeg.nim: decodeBlocks 7/826 = 0.85%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 57/131 Calls: 2/826 = 0.24% [sum: 733; 733/826 = 88.74%]
+  hashcommon.nim: nextTry 8/826 = 0.97%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: []= 20/826 = 2.42%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 58/131 Calls: 2/826 = 0.24% [sum: 735; 735/826 = 88.98%]
+  jpeg.nim: receiveExtend 3/826 = 0.36%
+  jpeg.nim: decodeRegularBlock 5/826 = 0.61%
+  jpeg.nim: decodeBlock 5/826 = 0.61%
+  jpeg.nim: decodeBlocks 7/826 = 0.85%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 59/131 Calls: 2/826 = 0.24% [sum: 737; 737/826 = 89.23%]
+  gate_dag.nim: add_random_gate 13/826 = 1.57%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 60/131 Calls: 2/826 = 0.24% [sum: 739; 739/826 = 89.47%]
+  hashcommon.nim: nextTry 8/826 = 0.97%
+  tables.nim: enlarge 12/826 = 1.45%
+  tables.nim: []= 20/826 = 2.42%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 61/131 Calls: 2/826 = 0.24% [sum: 741; 741/826 = 89.71%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  arc.nim: nimDecRefIsLast 5/826 = 0.61%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 62/131 Calls: 2/826 = 0.24% [sum: 743; 743/826 = 89.95%]
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  system.nim: & 23/826 = 2.78%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 63/131 Calls: 2/826 = 0.24% [sum: 745; 745/826 = 90.19%]
+  hashes.nim: hashWangYi1 7/826 = 0.85%
+  hashes.nim: hash 14/826 = 1.69%
+  gate_dag.nim: hash 14/826 = 1.69%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 64/131 Calls: 2/826 = 0.24% [sum: 747; 747/826 = 90.44%]
+  hashcommon.nim: isFilled 6/826 = 0.73%
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: :anonymous 6/826 = 0.73%
+  sequtils.nim: all 6/826 = 0.73%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 65/131 Calls: 2/826 = 0.24% [sum: 749; 749/826 = 90.68%]
+  system.nim: align 11/826 = 1.33%
+  arc.nim: nimRawDispose 5/826 = 0.61%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 66/131 Calls: 2/826 = 0.24% [sum: 751; 751/826 = 90.92%]
+  arc.nim: nimIncRef 83/826 = 10.05%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 67/131 Calls: 2/826 = 0.24% [sum: 753; 753/826 = 91.16%]
+  arithmetics.nim: -% 105/826 = 12.71%
+  orc.nim: nimDecRefIsLastDyn 165/826 = 19.98%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 68/131 Calls: 2/826 = 0.24% [sum: 755; 755/826 = 91.40%]
+  system.nim: align 11/826 = 1.33%
+  system.nim: newSeq 62/826 = 7.51%
+  image_utils.nim: outputs_to_pixie_image 25/826 = 3.03%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 69/131 Calls: 2/826 = 0.24% [sum: 757; 757/826 = 91.65%]
+  system.nim: align 11/826 = 1.33%
+  sequtils.nim: deduplicate 18/826 = 2.18%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 70/131 Calls: 2/826 = 0.24% [sum: 759; 759/826 = 91.89%]
+  hashcommon.nim: rawGet 31/826 = 3.75%
+  tables.nim: [] 81/826 = 9.81%
+  gate_dag.nim: :anonymous 6/826 = 0.73%
+  sequtils.nim: all 6/826 = 0.73%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 71/131 Calls: 2/826 = 0.24% [sum: 761; 761/826 = 92.13%]
+  system.nim: newSeq 62/826 = 7.51%
+  lz77.nim: encodeLz77 2/826 = 0.24%
+  deflate.nim: deflate 7/826 = 0.85%
+  zippy.nim: compress 7/826 = 0.85%
+  zippy.nim: compress 7/826 = 0.85%
+  png.nim: encodePng 7/826 = 0.85%
+  png.nim: encodePng 7/826 = 0.85%
+  pixie.nim: encodeImage 7/826 = 0.85%
+  pixie.nim: writeFile 7/826 = 0.85%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 72/131 Calls: 2/826 = 0.24% [sum: 763; 763/826 = 92.37%]
+  jpeg.nim: magnifyYBy2 4/826 = 0.48%
+  jpeg.nim: buildImage 34/826 = 4.12%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 73/131 Calls: 2/826 = 0.24% [sum: 765; 765/826 = 92.62%]
+  arc.nim: nimIncRef 83/826 = 10.05%
+  tableimpl.nim: rawInsert 5/826 = 0.61%
+  tables.nim: []= 20/826 = 2.42%
+  gate_dag.nim: kahn_topo_sort 170/826 = 20.58%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 74/131 Calls: 2/826 = 0.24% [sum: 767; 767/826 = 92.86%]
+  arc.nim: nimNewObj 3/826 = 0.36%
+  bitty.nim: newBitArray 37/826 = 4.48%
+  gate_dag.nim: descendants_mapping 435/826 = 52.66%
+  gate_dag.nim: stage_input_mutation 455/826 = 55.08%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 75/131 Calls: 2/826 = 0.24% [sum: 769; 769/826 = 93.10%]
+  system.nim: & 23/826 = 2.78%
+  gate_dag.nim: add_random_gate 13/826 = 1.57%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
+Entry: 76/131 Calls: 2/826 = 0.24% [sum: 771; 771/826 = 93.34%]
+  system.nim: newSeq 62/826 = 7.51%
+  jpeg.nim: newMask 4/826 = 0.48%
+  jpeg.nim: magnifyYBy2 4/826 = 0.48%
+  jpeg.nim: buildImage 34/826 = 4.12%
+  jpeg.nim: decodeJpeg 48/826 = 5.81%
+  pixie.nim: decodeImage 48/826 = 5.81%
+  pixie.nim: readImage 48/826 = 5.81%
+  reconstruct.nim: reconstruct 825/826 = 99.88%
