@@ -73,7 +73,7 @@ proc kahn_topo_sort*(graph: var Graph) =
   var sorted: seq[GateRef] = newSeq[GateRef]()
 
   for g in (graph.outputs & graph.gates & graph.inputs):
-    incoming_edges[g] = g.inputs.len
+    incoming_edges[g] = g.inputs.deduplicate().len
     if incoming_edges[g] == 0:
       pending.add(g)
 
@@ -108,8 +108,8 @@ proc connect*(new_input, gate: GateRef) =
   gate.inputs.add(new_input)
 
 proc disconnect*(old_input, gate: GateRef) =
-  old_input.outputs = filter(old_input.outputs, proc(o: GateRef): bool = (o != gate))
-  gate.inputs = filter(gate.inputs, proc(i: GateRef): bool = (i != old_input))
+  old_input.outputs.del(old_input.outputs.find(gate))
+  gate.inputs.del(gate.inputs.find(old_input))
 
 proc add_descendants*(gate: GateRef, seen: var seq[GateRef]) =
   for o in gate.outputs:
@@ -142,6 +142,7 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
   else:
     graph.gates.add(new_gate)
 
+
 proc boolseq_to_uint64(boolseq: seq[bool]): uint64 =
   var output: uint64 = 0
   for i, bit in boolseq:
@@ -173,7 +174,7 @@ proc undo_function_mutation*(gate: GateRef) =
 proc stage_input_mutation*(gate: GateRef, graph: Graph) =
   gate.inputs_cache = gate.inputs
   let possible_inputs = (graph.inputs & graph.gates)
-
+  
   for i in 0..1:
 
     let valid_inputs = collect:
