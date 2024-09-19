@@ -31,10 +31,10 @@ proc outputs_to_pixie_image*(
 
   for y in 0 ..< height:
     for x in 0 ..< width:
-      var rgb: seq[uint8] = newSeq[uint8](3)
+      var rgb: seq[byte] = newSeq[byte](3)
       for c in 0 ..< 3:
         let idx = (c * height * width) + (y * width) + x
-        rgb[c] = trimmed[idx].uint8
+        rgb[c] = trimmed[idx].byte
 
       output_image.unsafe[x, y] = pix.rgbx(rgb[0], rgb[1], rgb[2], 255)
 

@@ -143,22 +143,15 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
   else:
     graph.gates.add(new_gate)
 
-
-proc boolseq_to_uint64(boolseq: seq[bool]): uint64 =
-  var output: uint64 = 0
-  for i, bit in boolseq:
-    if bit:
-      output = output or (1.uint64 shl i)
-  return output
-
 proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
-  # seq(output_bitcount)[BitArray] --> seq(num_addresses)[uint64]
+  # seq(8)[BitArray] --> seq(num_addresses)[uint64]
   var unpacked: seq[uint64] = newSeq[uint64](packed[0].len)
   for idx in 0 ..< packed[0].len:
-    var bits: seq[bool] = newSeq[bool](packed.len)
-    for i in 0 ..< packed.len:
-      bits[i] = packed[i].unsafeGet(idx)
-    unpacked[idx] = boolseq_to_uint64(bits)
+    var as_uint64 = 0.uint64
+    for bit_idx in 0 ..< packed.len:
+      if packed[bit_idx].unsafeGet(idx):
+        as_uint64 = as_uint64 or (1.uint64 shl bit_idx)
+    unpacked[idx] = as_uint64
 
   return unpacked
 

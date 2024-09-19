@@ -18,11 +18,11 @@ randomize()
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
 
 const
-  width = 64
-  height = 96
+  width = 32
+  height = 48
   channels = 3
   output_bitcount = 8
-  num_gates = 256
+  num_gates = 32
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
