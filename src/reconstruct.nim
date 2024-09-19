@@ -15,11 +15,11 @@ import std/random
 
 randomize()
 
-var input_image = pix.read_image("test_images/mona_lisa.jpg")
+var input_image = pix.read_image("test_images/branos.png")
 
 const
-  width = 128
-  height = 192
+  width = 256
+  height = 256
   channels = 3
   output_bitcount = 8
   num_gates = 1024
@@ -94,7 +94,7 @@ for i in 0..100_000:
       global_best_rmse = local_best_rmse
       global_best_image = output_image
     
-      echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}."
+      echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}. Gate: {mutated_gate.id:05d}. Function: {mutated_gate.function}."
 
       output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
       output_image.write_file("outputs/latest.png")
