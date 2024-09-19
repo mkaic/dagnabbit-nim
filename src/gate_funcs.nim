@@ -12,10 +12,10 @@ type
     gf_A_OR_NOT_B,
     gf_NOT_A_AND_B,
     gf_NOT_A_OR_B,
-    gf_A,
-    gf_B,
-    gf_NOT_A,
-    gf_NOT_B,
+    # gf_A,
+    # gf_B,
+    # gf_NOT_A,
+    # gf_NOT_B,
     # gf_ZERO,
     # gf_ONE
 
@@ -42,14 +42,14 @@ proc eval*(gf: GateFunc, a, b: BitArray): BitArray =
       return not a and b
     of gf_NOT_A_OR_B:
       return not a or b
-    of gf_A:
-      return a
-    of gf_B:
-      return b
-    of gf_NOT_A:
-      return not a
-    of gf_NOT_B:
-      return not b
+    # of gf_A:
+    #   return a
+    # of gf_B:
+    #   return b
+    # of gf_NOT_A:
+    #   return not a
+    # of gf_NOT_B:
+    #   return not b
     # of gf_ZERO:
     #   return a xor a
     # of gf_ONE:
