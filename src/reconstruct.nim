@@ -10,6 +10,8 @@ import std/bitops
 import std/strutils
 import std/random
 
+# TODO: FIX KAHN TOPO SORT AND DESCENDANT-FINDING?
+
 randomize()
 
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
@@ -39,6 +41,10 @@ for i in 0 ..< output_bitcount:
 
 for i in 0 ..< num_gates:
   graph.add_random_gate()
+
+echo "Number of gates: ", graph.gates.len
+
+graph.kahn_topo_sort()
 
 echo "Number of gates: ", graph.gates.len
 

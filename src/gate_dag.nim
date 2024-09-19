@@ -16,8 +16,8 @@ type
     value*: BitArray
     evaluated*: bool
 
-    inputs*: array[2, GateRef]
-    inputs_cache*: array[2, GateRef]
+    inputs*: seq[GateRef]
+    inputs_cache*: seq[GateRef]
 
     outputs*: seq[GateRef]
 
@@ -69,53 +69,64 @@ proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
   return output
 
 proc kahn_topo_sort*(graph: var Graph) =
-  var dependant_counts: Table[GateRef, int]
+  var incoming_edges: Table[GateRef, int]
   var pending: seq[GateRef] = newSeq[GateRef]()
   var sorted: seq[GateRef] = newSeq[GateRef]()
 
-  while sorted.len < (graph.outputs.len + graph.gates.len + graph.inputs.len):
+  for g in (graph.outputs & graph.gates & graph.inputs):
+    incoming_edges[g] = g.inputs.len
+    echo "incoming_edges: ", incoming_edges[g]
+    if incoming_edges[g] == 0:
+      pending.add(g)
 
-    for g in (graph.outputs & graph.gates & graph.inputs):
-      dependant_counts[g] = g.outputs.len
-      if g.outputs.len == 0:
-        pending.add(g)
+  echo "pending len: ", pending.len
+
+  while pending.len > 0:
 
     let next_gate = pending[0]
     pending.del(0)
     sorted.add(next_gate)
-
+    
     for o in next_gate.outputs:
-      dependant_counts[o] -= 1
+      incoming_edges[o] -= 1
+      if incoming_edges[o] == 0:
+        pending.add(o)
 
-  assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, "Graph is not connected"
-  assert all(sorted, proc (g: GateRef): bool = dependant_counts[g] == 0), "Graph is not acyclic"
+
+  assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, &"Graph is not connected, and only has len {sorted.len} instead of {graph.outputs.len + graph.gates.len + graph.inputs.len}"
+  assert all(sorted, proc (g: GateRef): bool = incoming_edges[g] == 0), "Graph is not acyclic"
 
   sorted = collect:
     for g in sorted:
       if g in graph.gates: g
-  
-  graph.gates = sorted.reversed()
 
 
 proc add_input*(graph: var Graph) =
   graph.inputs.add(GateRef(id: graph.id_autoincrement))
   graph.id_autoincrement += 1
 
-proc connect*(new_input, gate: GateRef, input_idx: int) =
+proc connect*(new_input, gate: GateRef) =
   new_input.outputs.add(gate)
-  gate.inputs[input_idx] = new_input
+  gate.inputs.add(new_input)
+
+proc disconnect*(old_input, gate: GateRef) =
+  old_input.outputs.del(old_input.outputs.find(gate))
+  gate.inputs.del(gate.inputs.find(old_input))
 
 proc replace_input*(gate, old_input, new_input: GateRef) =
-  old_input.outputs.del(old_input.outputs.find(gate))
-  connect(new_input, gate, gate.inputs.find(old_input))
+  disconnect(old_input, gate)
+  connect(new_input, gate)
 
-proc descendants*(gate: GateRef, seen: seq[GateRef] = newSeq[GateRef]()): seq[GateRef] =
-  var unseen: seq[GateRef]
+proc add_descendants*(gate: GateRef, seen: var seq[GateRef]) =
   for o in gate.outputs:
     if o notin seen:
-      unseen.add(o)
-      unseen &= descendants(o, seen & unseen)
-  return seen & unseen
+      seen.add(o)
+      add_descendants(o, seen)
+
+proc descendants*(gate: GateRef): seq[GateRef] =
+  var descendants = newSeq[GateRef]()
+  add_descendants(gate, descendants)
+  return descendants
 
 proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
@@ -124,8 +135,7 @@ proc add_output*(graph: var Graph) =
   graph.id_autoincrement += 1
 
   for i in 0..1:
-    var random_input_gate = sample(graph.inputs)
-    connect(random_input_gate, g, input_idx = i)
+    connect(sample(graph.inputs), g)
     
   graph.outputs.add(g)
 
@@ -135,24 +145,22 @@ proc add_random_gate*(graph: var Graph) =
   # input is chosen randomly from gates before the new gate in
   # the graph.
 
-  let random_gate_idx = rand(0 ..< (graph.gates.len + graph.outputs.len))
+  var random_gate = sample(graph.gates & graph.outputs)
   let input_edge_to_split = rand(0..1)
-
-  var random_gate = (graph.gates & graph.outputs)[random_gate_idx]
   var upstream_gate = random_gate.inputs[input_edge_to_split]
    
   var new_gate= GateRef(id: graph.id_autoincrement)
   graph.id_autoincrement += 1
 
   random_gate.replace_input(upstream_gate, new_gate)
-  connect(upstream_gate, new_gate, input_idx=0)
+  connect(upstream_gate, new_gate)
 
   let valid_inputs = collect:
     for g in (graph.inputs & graph.gates):
-      if g notin descendants(new_gate): g
+      if g notin (new_gate.descendants() & new_gate.inputs): g
   
   var random_second_input = sample(valid_inputs)
-  connect(random_second_input, new_gate, input_idx=1)
+  connect(random_second_input, new_gate)
 
   graph.gates.add(new_gate)
 
@@ -186,10 +194,13 @@ proc undo_function_mutation*(gate: GateRef) =
 
 proc stage_input_mutation*(gate: GateRef, graph: Graph) =
   gate.inputs_cache = gate.inputs
-  let random_gate_idx: int = graph.gates.find(gate)
-  let valid_inputs = (graph.inputs & graph.gates)[0 ..< (random_gate_idx + graph.inputs.len)]
+  let possible_inputs = (graph.inputs & graph.gates)
   for i in 0..1:
-    gate.replace_input(gate.inputs[i], sample(valid_inputs))
+    let valid_inputs = collect:
+      for g in possible_inputs:
+        if g notin (gate.descendants() & gate.inputs): g
+    var input_gate = sample(valid_inputs)
+    gate.replace_input(gate.inputs[i], input_gate)
 
 proc undo_input_mutation*(gate: GateRef) =
   for i in 0..1:
