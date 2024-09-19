@@ -5,7 +5,6 @@ import std/sugar
 import std/random
 import std/sequtils
 import std/strformat
-import pixie as pix
 
 randomize()
 
@@ -105,73 +104,12 @@ proc add_random_gate*(graph: var Graph) =
 
   graph.gates.insert(new_gate, new_gate_insertion_idx)
 
-proc uint64_to_bool_bitseq(i: uint64, bits: int): seq[bool] =
-  return collect(newSeq):
-    for j in 0 ..< bits:
-      let mask = 1.uint64 shl j
-      (i and mask) != 0
-
-proc bool_bitseq_to_uint64(bool_bitseq: seq[bool]): uint64 =
+proc boolseq_to_uint64(boolseq: seq[bool]): uint64 =
   var output: uint64 = 0
-  for i, bit in bool_bitseq:
+  for i, bit in boolseq:
     if bit:
       output = output or (1.uint64 shl i)
   return output
-
-proc make_input_bitarrays*(
-  height: int,
-  width: int,
-  channels: int,
-  x_bitcount: int,
-  y_bitcount: int,
-  c_bitcount: int,
-  pos_bitcount: int,
-  ): seq[BitArray] =
-  # returns seq(h*w*c)[BitArray(input_bitcount)]
-
-  let
-    y_as_bool_bitseq: seq[seq[bool]] = collect(newSeq): # seq(height)[seq(y_bitcount)]
-      for y in 0 ..< height:
-        y.uint64.uint64_to_bool_bitseq(bits = y_bitcount)
-
-    x_as_bool_bitseq: seq[seq[bool]] = collect(newSeq): # seq(width)[seq(x_bitcount)]
-      for x in 0 ..< width:
-        x.uint64.uint64_to_bool_bitseq(bits = x_bitcount)
-
-    c_as_bool_bitseq: seq[seq[bool]] = collect(newSeq): # seq(channels)[seq(c_bitcount)]
-      for c in 0 ..< channels:
-        c.uint64.uint64_to_bool_bitseq(bits = c_bitcount)
-
-    total_iterations = width * height * channels
-
-  var input_values: seq[seq[bool]] = newSeq[seq[bool]](
-      pos_bitcount) # seq(input_bitcount)[seq(h*w*c)[bool]]
-  for idx in 0 ..< total_iterations:
-    let
-      c: int = idx div (height * width) mod channels
-      y: int = idx div (width) mod height
-      x: int = idx div (1) mod width
-
-    let
-      c_bits: seq[bool] = c_as_bool_bitseq[c]
-      x_bits: seq[bool] = x_as_bool_bitseq[x]
-      y_bits: seq[bool] = y_as_bool_bitseq[y]
-
-    let pos_bits: seq[bool] = x_bits & y_bits & c_bits
-
-    for i, bit in pos_bits:
-      input_values[i].add(bit)
-
-  var input_bitarrays = newSeq[BitArray](pos_bitcount)
-  for i in 0 ..< pos_bitcount:
-    let bitseq = input_values[i]
-    let bitarray = newBitArray(bitseq.len)
-    for j, bit in bitseq:
-      if bit:
-        bitarray.unsafeSetTrue(j)
-    input_bitarrays[i] = bitarray
-
-  return input_bitarrays
 
 proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
   # seq(output_bitcount)[BitArray] --> seq(num_addresses)[uint64]
@@ -180,47 +118,9 @@ proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
     var bits: seq[bool] = newSeq[bool](packed.len)
     for i in 0 ..< packed.len:
       bits[i] = packed[i].unsafeGet(idx)
-    unpacked[idx] = bool_bitseq_to_uint64(bits)
+    unpacked[idx] = boolseq_to_uint64(bits)
 
   return unpacked
-
-proc outputs_to_pixie_image*(
-  outputs: seq[uint64], # seq(num_addresses)[uint64]
-  height: int,
-  width: int,
-  channels: int,
-  ): pix.Image =
-
-  let trimmed = outputs[0 ..< channels * height * width]
-  var output_image = pix.new_image(width, height)
-
-  for y in 0 ..< height:
-    for x in 0 ..< width:
-      var rgb: seq[uint8] = newSeq[uint8](3)
-      for c in 0 ..< 3:
-        let idx = (c * height * width) + (y * width) + x
-        rgb[c] = trimmed[idx].uint8
-
-      output_image.unsafe[x, y] = pix.rgbx(rgb[0], rgb[1], rgb[2], 255)
-
-  return output_image
-
-proc calculate_rmse*(
-  image1: pix.Image,
-  image2: pix.Image
-  ): float32 =
-
-  var error: float32 = 0
-  for y in 0 ..< image1.height:
-    for x in 0 ..< image1.width:
-      let rgb1 = image1.unsafe[x, y]
-      let rgb2 = image2.unsafe[x, y]
-      error += (rgb1.r.float32 - rgb2.r.float32)^2
-      error += (rgb1.g.float32 - rgb2.g.float32)^2
-      error += (rgb1.b.float32 - rgb2.b.float32)^2
-
-  error = error.float32 / (image1.width.float32 * image1.height.float32 * 3.0)
-  return math.sqrt(error)
 
 proc stage_function_mutation*(gate: GateRef) =
   gate.function_cache = gate.function

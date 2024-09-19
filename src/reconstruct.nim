@@ -1,4 +1,5 @@
 import ./gate_dag
+import ./image_utils
 import ./bitty
 
 import pixie as pix
@@ -17,20 +18,14 @@ const
   width = 8
   height = 12
   channels = 3
-
-  x_bitcount = fast_log2(width) + 1
-  y_bitcount = fast_log2(height) + 1
-  c_bitcount = fast_log2(channels) + 1
-  input_bitcount = x_bitcount + y_bitcount + c_bitcount
   output_bitcount = 8
   num_gates = 2048
-  num_addresses = width * height * channels
 
-echo "Width address bitcount: ", x_bitcount
-echo "Height address bitcount: ", y_bitcount
-echo "Channel address bitcount: ", c_bitcount
-echo "Total address bitcount: ", input_bitcount
-echo "Total number of addresses: ", num_addresses
+let
+  address_bitcount = fast_log2(width * height * channels) + 1
+
+echo "Total number of addresses: ", width * height * channels
+echo "Address bitcount: ", address_bitcount
 echo "Number of gates: ", num_gates
 
 input_image = input_image.resize(width, height)
@@ -38,7 +33,7 @@ input_image.write_file("outputs/original.png")
 
 var graph = Graph()
 
-for i in 0 ..< input_bitcount:
+for i in 0 ..< address_bitcount:
   graph.add_input()
 
 for i in 0 ..< output_bitcount:
@@ -47,14 +42,10 @@ for i in 0 ..< output_bitcount:
 for i in 0 ..< num_gates:
   graph.add_random_gate()
 
-let input_bitarrays: seq[BitArray] = make_input_bitarrays(
+let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   height = height,
   width = width,
   channels = channels,
-  x_bitcount = x_bitcount,
-  y_bitcount = y_bitcount,
-  c_bitcount = c_bitcount,
-  pos_bitcount = input_bitcount
   )
 
 type MutationType = enum
@@ -77,9 +68,6 @@ for i in 0..100_000:
       random_gate.stage_function_mutation()
     of mt_INPUT:
       random_gate.stage_input_mutation(graph)
-
-  # random_gate.stage_function_mutation()
-  # random_gate.stage_input_mutation(graph)
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -110,5 +98,3 @@ for i in 0..100_000:
         random_gate.undo_function_mutation()
       of mt_INPUT:
         random_gate.undo_input_mutation()
-    # random_gate.undo_function_mutation()
-    # random_gate.undo_input_mutation()
