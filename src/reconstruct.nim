@@ -19,7 +19,7 @@ const
   height = 96
   channels = 3
   output_bitcount = 8
-  num_gates = 1024
+  num_gates = 32
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -39,6 +39,8 @@ for i in 0 ..< output_bitcount:
 
 for i in 0 ..< num_gates:
   graph.add_random_gate()
+
+echo "Number of gates: ", graph.gates.len
 
 let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   height = height,
@@ -67,6 +69,7 @@ for i in 0..100_000:
       random_gate.stage_function_mutation()
     of mt_INPUT:
       random_gate.stage_input_mutation(graph)
+      graph.kahn_topo_sort()
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
   let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
@@ -99,3 +102,4 @@ for i in 0..100_000:
         random_gate.undo_function_mutation()
       of mt_INPUT:
         random_gate.undo_input_mutation()
+        graph.kahn_topo_sort()

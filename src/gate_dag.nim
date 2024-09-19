@@ -59,7 +59,7 @@ proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
   for (i, v) in zip(graph.inputs, bitpacked_inputs):
     i.value = v
 
-  for i, g in graph.gates:
+  for g in graph.gates:
     g.eval()
 
   for o in graph.outputs:
@@ -94,8 +94,7 @@ proc kahn_topo_sort*(graph: var Graph) =
     for g in sorted:
       if g in graph.gates: g
   
-  sorted.reverse()
-  graph.gates = sorted
+  graph.gates = sorted.reversed()
 
 
 proc add_input*(graph: var Graph) =
@@ -123,6 +122,7 @@ proc add_output*(graph: var Graph) =
 
   let g = GateRef(id: graph.id_autoincrement)
   graph.id_autoincrement += 1
+
   for i in 0..1:
     var random_input_gate = sample(graph.inputs)
     connect(random_input_gate, g, input_idx = i)
@@ -155,7 +155,6 @@ proc add_random_gate*(graph: var Graph) =
   connect(random_second_input, new_gate, input_idx=1)
 
   graph.gates.add(new_gate)
-  graph.kahn_topo_sort()
 
 proc boolseq_to_uint64(boolseq: seq[bool]): uint64 =
   var output: uint64 = 0
