@@ -15,8 +15,8 @@ randomize()
 var input_image = pix.read_image("test_images/mona_lisa.jpg")
 
 const
-  width = 32
-  height = 48
+  width = 64
+  height = 96
   channels = 3
   output_bitcount = 8
   num_gates = 1024
@@ -92,7 +92,7 @@ for i in 0..100_000:
 
   elif rmse == global_best_rmse:
     discard # Keep the mutation, but don't count it as an improvement
-  
+
   else:
     case mutation_type:
       of mt_FUNCTION:

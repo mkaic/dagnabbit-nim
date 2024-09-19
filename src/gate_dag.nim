@@ -5,12 +5,13 @@ import std/sugar
 import std/random
 import std/sequtils
 import std/strformat
+import std/tables
+import std/hashes
 
 randomize()
 
 type
-  GateRef* {.acyclic.} = ref GateObj
-  GateObj* = object
+  GateRef* {.acyclic.} = ref object
     value*: BitArray
     evaluated*: bool
 
@@ -19,14 +20,19 @@ type
 
     outputs*: seq[GateRef]
 
-    function*: GateFunc
+    function*: GateFunc = gf_NAND
     function_cache*: GateFunc
+
+    id*: int
 
   Graph* = object
     inputs*: seq[GateRef]
     gates*: seq[GateRef]
     outputs*: seq[GateRef]
+    id_autoincrement: int = 0
 
+proc hash(gate: GateRef): Hash =
+  return hash(gate.id)
 
 proc eval(gate: GateRef) =
   if not gate.evaluated:
@@ -61,8 +67,39 @@ proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
 
   return output
 
+proc kahn_topo_sort*(graph: var Graph) =
+  var dependant_counts: Table[GateRef, int]
+  var pending: seq[GateRef] = newSeq[GateRef]()
+  var sorted: seq[GateRef] = newSeq[GateRef]()
+
+  for g in (graph.outputs & graph.gates & graph.inputs):
+    dependant_counts[g] = g.outputs.len
+    if g.outputs.len == 0:
+      pending.add(g)
+
+  for i in 0..<(graph.outputs.len + graph.gates.len + graph.inputs.len):
+
+    sorted.add(pending[0])
+    for o in pending[0].outputs:
+      dependant_counts[o] -= 1
+      if dependant_counts[o] == 0:
+        pending.add(o)
+
+    pending.del(0)
+
+  assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, "Graph is not connected"
+  assert all(sorted, proc (g: GateRef): bool = dependant_counts[g] == 0), "Graph is not acyclic"
+
+  sorted = collect:
+    for g in sorted:
+      if g in graph.gates: g
+
+  graph.gates = sorted
+
+
 proc add_input*(graph: var Graph) =
-  graph.inputs.add(GateRef(evaluated: true))
+  graph.inputs.add(GateRef(id: graph.id_autoincrement))
+  graph.id_autoincrement += 1
 
 proc connect*(new_input, gate: GateRef, input_idx: int) =
   new_input.outputs.add(gate)
@@ -72,10 +109,19 @@ proc replace_input*(gate, old_input, new_input: GateRef) =
   old_input.outputs.del(old_input.outputs.find(gate))
   connect(new_input, gate, gate.inputs.find(old_input))
 
+proc descendants*(gate: GateRef, seen: seq[GateRef] = newSeq[GateRef]()): seq[GateRef] =
+  var unseen: seq[GateRef]
+  for o in gate.outputs:
+    if o notin seen:
+      unseen.add(o)
+      unseen &= descendants(o, seen & unseen)
+  return seen & unseen
+
 proc add_output*(graph: var Graph) =
   assert graph.inputs.len > 0, "Inputs must be added before outputs"
 
-  let g = GateRef(evaluated: false)
+  let g = GateRef(id: graph.id_autoincrement)
+  graph.id_autoincrement += 1
   for i in 0..1:
     var random_input_gate = sample(graph.inputs)
     connect(random_input_gate, g, input_idx = i)
@@ -89,20 +135,26 @@ proc add_random_gate*(graph: var Graph) =
   # the graph.
 
   let random_gate_idx = rand(0 ..< (graph.gates.len + graph.outputs.len))
-  let new_gate_insertion_idx = min(random_gate_idx, graph.gates.len)
   let input_edge_to_split = rand(0..1)
 
   var random_gate = (graph.gates & graph.outputs)[random_gate_idx]
   var upstream_gate = random_gate.inputs[input_edge_to_split]
-  var new_gate= GateRef(function: GateFunc.gf_NAND)
+   
+  var new_gate= GateRef(id: graph.id_autoincrement)
+  graph.id_autoincrement += 1
 
   random_gate.replace_input(upstream_gate, new_gate)
   connect(upstream_gate, new_gate, input_idx=0)
 
-  let valid_inputs = (graph.inputs & graph.gates)[0 ..< (new_gate_insertion_idx + graph.inputs.len)]
-  connect(sample(valid_inputs), new_gate, input_idx=1)
+  let valid_inputs = collect:
+    for g in (graph.inputs & graph.gates):
+      if g notin descendants(new_gate): g
+  
+  var random_second_input = sample(valid_inputs)
+  connect(random_second_input, new_gate, input_idx=1)
 
-  graph.gates.insert(new_gate, new_gate_insertion_idx)
+  graph.gates.add(new_gate)
+  graph.kahn_topo_sort()
 
 proc boolseq_to_uint64(boolseq: seq[bool]): uint64 =
   var output: uint64 = 0
