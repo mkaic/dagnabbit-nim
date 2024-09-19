@@ -83,11 +83,10 @@ proc kahn_topo_sort*(graph: var Graph) =
     pending.del(0)
     sorted.add(next_gate)
     
-    for o in next_gate.outputs:
+    for o in next_gate.outputs.deduplicate():
       incoming_edges[o] -= 1
       if incoming_edges[o] == 0:
         pending.add(o)
-
 
   assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, &"Graph is not connected, and only has len {sorted.len} instead of {graph.outputs.len + graph.gates.len + graph.inputs.len}"
   assert all(sorted, proc (g: GateRef): bool = incoming_edges[g] == 0), "Graph is not acyclic"
@@ -118,7 +117,9 @@ proc add_descendants*(gate: GateRef, seen: var seq[GateRef]) =
       add_descendants(o, seen)
 
 proc descendants*(gate: GateRef): seq[GateRef] =
-  var descendants = newSeq[GateRef]()
+  # gate is counted as one of its own descendants
+  # since connecting to itself would create a cycle
+  var descendants = @[gate]
   add_descendants(gate, descendants)
   return descendants
   
@@ -133,7 +134,7 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
   for i in 0..1:
     let valid_inputs = collect:
       for g in (graph.inputs & graph.gates):
-        if g notin (new_gate.descendants() & new_gate.inputs): g
+        if g notin new_gate.descendants(): g
 
     connect(sample(valid_inputs), new_gate)
 
@@ -179,7 +180,7 @@ proc stage_input_mutation*(gate: GateRef, graph: Graph) =
 
     let valid_inputs = collect:
       for g in possible_inputs:
-        if g notin (gate.descendants() & gate.inputs): g
+        if g notin gate.descendants(): g
 
     var new_input_gate = sample(valid_inputs)
 
