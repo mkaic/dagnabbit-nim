@@ -6,6 +6,7 @@ import ./bitty
 import pixie as pix
 
 import std/strformat
+import std/sequtils
 import std/math
 import std/bitops
 import std/strutils
@@ -55,9 +56,13 @@ var global_best_image: pix.Image
 var timelapse_count = 0
 var round = 0
 for i in 0..100_000:
-  let gate_idx = i mod (graph.gates.len + graph.outputs.len)
-  if gate_idx == 0:
+  var permutation = toSeq 0 ..< graph.gates.len + graph.outputs.len
+  permutation.shuffle()
+  let permutation_idx = i mod (graph.gates.len + graph.outputs.len)
+  if permutation_idx == 0:
     round += 1
+
+  let gate_idx = permutation[permutation_idx]
 
   var mutated_gate: GateRef
   if gate_idx >= graph.gates.len:
