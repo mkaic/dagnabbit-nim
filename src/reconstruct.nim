@@ -1,4 +1,5 @@
 import ./gate_dag
+import ./gate_funcs
 import ./image_utils
 import ./bitty
 
@@ -20,7 +21,7 @@ const
   height = 192
   channels = 3
   output_bitcount = 8
-  num_gates = 4096
+  num_gates = 1024
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -63,39 +64,35 @@ for i in 0..100_000:
     mutated_gate = graph.outputs[gate_idx - graph.gates.len]
   else:
     mutated_gate = graph.gates[gate_idx]
+  
+  var local_best_rmse = 255'f32
+  for gate_func in GateFunc:
+    mutated_gate.function = gate_func
 
-  mutated_gate.stage_function_mutation()
-  # mutated_gate.stage_input_mutation(graph)
-  # graph.kahn_topo_sort()
+    let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
+    let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
 
-  let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
-  let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
+    let output_image = outputs_to_pixie_image(
+      output_unpacked,
+      height = height,
+      width = width,
+      channels = channels
+      )
 
-  let output_image = outputs_to_pixie_image(
-    output_unpacked,
-    height = height,
-    width = width,
-    channels = channels
-    )
+    let rmse = calculate_rmse(input_image, output_image)
 
-  let rmse = calculate_rmse(input_image, output_image)
+    if rmse < local_best_rmse:
+      local_best_rmse = rmse
+      mutated_gate.function_cache = gate_func
 
-  if rmse < global_best_rmse:
-    global_best_rmse = rmse
-    global_best_image = output_image
-    echo &"RMSE: {global_best_rmse:.4f} at step {i:06}. Round {round:04}"
+    if local_best_rmse < global_best_rmse:
+      global_best_rmse = local_best_rmse
+      global_best_image = output_image
+    
+      echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}."
 
-    output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
-    output_image.write_file("outputs/latest.png")
-    timelapse_count += 1
+      output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
+      output_image.write_file("outputs/latest.png")
+      timelapse_count += 1
 
-  elif rmse == global_best_rmse:
-    discard # Keep the mutation, but don't count it as an improvement
-
-  else:
-    mutated_gate.undo_function_mutation()
-    # mutated_gate.undo_input_mutation()
-    # graph.kahn_topo_sort()
-
-  if i mod 100 == 0:
-    echo &"Step {i:06}."
+  mutated_gate.function = mutated_gate.function_cache
