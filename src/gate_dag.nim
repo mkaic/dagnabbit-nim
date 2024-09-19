@@ -7,6 +7,7 @@ import std/sequtils
 import std/strformat
 import std/tables
 import std/hashes
+import std/algorithm
 
 randomize()
 
@@ -72,20 +73,19 @@ proc kahn_topo_sort*(graph: var Graph) =
   var pending: seq[GateRef] = newSeq[GateRef]()
   var sorted: seq[GateRef] = newSeq[GateRef]()
 
-  for g in (graph.outputs & graph.gates & graph.inputs):
-    dependant_counts[g] = g.outputs.len
-    if g.outputs.len == 0:
-      pending.add(g)
+  while sorted.len < (graph.outputs.len + graph.gates.len + graph.inputs.len):
 
-  for i in 0..<(graph.outputs.len + graph.gates.len + graph.inputs.len):
+    for g in (graph.outputs & graph.gates & graph.inputs):
+      dependant_counts[g] = g.outputs.len
+      if g.outputs.len == 0:
+        pending.add(g)
 
-    sorted.add(pending[0])
-    for o in pending[0].outputs:
-      dependant_counts[o] -= 1
-      if dependant_counts[o] == 0:
-        pending.add(o)
-
+    let next_gate = pending[0]
     pending.del(0)
+    sorted.add(next_gate)
+
+    for o in next_gate.outputs:
+      dependant_counts[o] -= 1
 
   assert sorted.len == graph.outputs.len + graph.gates.len + graph.inputs.len, "Graph is not connected"
   assert all(sorted, proc (g: GateRef): bool = dependant_counts[g] == 0), "Graph is not acyclic"
@@ -93,7 +93,8 @@ proc kahn_topo_sort*(graph: var Graph) =
   sorted = collect:
     for g in sorted:
       if g in graph.gates: g
-
+  
+  sorted.reverse()
   graph.gates = sorted
 
 
