@@ -42,11 +42,7 @@ for i in 0 ..< output_bitcount:
 for i in 0 ..< num_gates:
   graph.add_random_gate()
 
-echo "Number of gates: ", graph.gates.len
-
 graph.kahn_topo_sort()
-
-echo "Number of gates: ", graph.gates.len
 
 let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   height = height,
