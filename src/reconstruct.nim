@@ -18,8 +18,8 @@ randomize()
 var input_image = pix.read_image("test_images/branos.png")
 
 const
-  width = 256
-  height = 256
+  width = 128
+  height = 128
   channels = 3
   output_bitcount = 8
   num_gates = 4096
