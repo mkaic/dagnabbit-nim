@@ -21,7 +21,7 @@ const
   height = 64
   channels = 3
   output_bitcount = 8
-  num_gates = 512
+  num_gates = 4096
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
