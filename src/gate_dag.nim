@@ -162,25 +162,26 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
   let split_output_gate_idx = rand(0 ..< graph.gates.len + graph.outputs.len)
   let is_graph_output = split_output_gate_idx >= graph.gates.len
   var split_output_gate: GateRef
+  var insert_new_gate_at: int
   if is_graph_output:
     split_output_gate = graph.outputs[split_output_gate_idx - graph.gates.len]
+    insert_new_gate_at = graph.gates.len
   else:
     split_output_gate = graph.gates[split_output_gate_idx]
+    insert_new_gate_at = split_output_gate_idx
 
   var split_input_gate = sample(split_output_gate.inputs)
 
   var new_gate = graph.create_node()
-  graph.gates.add(new_gate)
+  graph.gates.insert(new_gate, insert_new_gate_at)
 
   disconnect(split_input_gate, split_output_gate)
   connect(split_input_gate, new_gate)
   connect(new_gate, split_output_gate)
-  
-  graph.refresh_descendants_until(new_gate)
 
   let valid_gate_inputs = collect:
-    for g in graph.gates:
-      if (not new_gate.descendants[g.id]): g
+    for i, g in graph.gates:
+      if i < insert_new_gate_at: g
 
   let all_valid_inputs = graph.inputs & valid_gate_inputs
 
@@ -211,18 +212,18 @@ proc undo_function_mutation*(gate: GateRef) =
 proc stage_input_mutation*(gate: GateRef, graph: var Graph) =
   gate.inputs_cache = gate.inputs
 
-  for i in 0..1:
-    graph.refresh_descendants_until(gate)
+  let random_input_choice  = rand(0..1)
+  graph.refresh_descendants_until(gate)
 
-    let valid_inputs = collect:
-      for g in graph.gates:
-        if not gate.descendants[g.id]: g
+  let valid_inputs = collect:
+    for g in graph.gates:
+      if not gate.descendants[g.id]: g
 
-    let all_valid_inputs = graph.inputs & valid_inputs
-    var new_input_gate = sample(all_valid_inputs)
+  let all_valid_inputs = graph.inputs & valid_inputs
+  var new_input_gate = sample(all_valid_inputs)
 
-    disconnect(gate.inputs[i], gate)
-    connect(new_input_gate, gate)
+  disconnect(gate.inputs[random_input_choice], gate)
+  connect(new_input_gate, gate)
 
   graph.sort_gates()
 

@@ -17,11 +17,11 @@ randomize()
 var input_image = pix.read_image("test_images/branos.png")
 
 const
-  width = 128
-  height = 128
+  width = 64
+  height = 64
   channels = 3
   output_bitcount = 8
-  num_gates = 1024
+  num_gates = 512
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -40,7 +40,6 @@ for i in 0 ..< output_bitcount:
   graph.add_output()
 
 for i in 0 ..< num_gates:
-  echo "Adding gate ", i
   graph.add_random_gate()
 
 graph.sort_gates()
@@ -54,63 +53,60 @@ let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
 var global_best_rmse = 255'f32
 var global_best_image: pix.Image
 var timelapse_count = 0
-var round = 0
 
-type MutationType = enum mt_INPUT, mt_FUNCTION
+type MutationType = enum 
+  # mt_INPUT, 
+  mt_FUNCTION
 
-for i in 0..100_000:
-  var permutation = toSeq 0 ..< graph.gates.len + graph.outputs.len
+for round in 0 ..< 100:
+
+  var permutation = graph.gates & graph.outputs
   permutation.shuffle()
-  let permutation_idx = i mod (graph.gates.len + graph.outputs.len)
-  if permutation_idx == 0:
-    round += 1
 
-  let gate_idx = permutation[permutation_idx]
+  for i, mutated_gate in permutation:
 
-  var mutated_gate: GateRef
-  if gate_idx >= graph.gates.len:
-    mutated_gate = graph.outputs[gate_idx - graph.gates.len]
-  else:
-    mutated_gate = graph.gates[gate_idx]
+    let step = i + round * permutation.len
 
-  let mutation_type = MutationType(i mod (MutationType.high.int + 1))
-
-  case mutation_type
-    of mt_INPUT:
-      stage_input_mutation(mutated_gate, graph)
-    of mt_FUNCTION:
-      stage_function_mutation(mutated_gate)
-  
-  var output_image: pix.Image
-
-  let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
-  let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
-
-  output_image = outputs_to_pixie_image(
-    output_unpacked,
-    height = height,
-    width = width,
-    channels = channels
-    )
-
-  let rmse = calculate_rmse(input_image, output_image)
-
-  if rmse < global_best_rmse:
-    global_best_rmse = rmse
-    global_best_image = output_image
-
-    echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}. Mutation type: {mutation_type}."
-
-    output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
-    output_image.write_file("outputs/latest.png")
-    timelapse_count += 1
-
-  elif rmse == global_best_rmse:
-    discard
-
-  else:
+    let mutation_type = rand(MutationType.low .. MutationType.high)
     case mutation_type
-      of mt_INPUT:
-        undo_input_mutation(mutated_gate, graph)
+      # of mt_INPUT:
+      #   stage_input_mutation(mutated_gate, graph)
       of mt_FUNCTION:
-        undo_function_mutation(mutated_gate)
+        stage_function_mutation(mutated_gate)
+    
+    var output_image: pix.Image
+
+    let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
+    let output_unpacked = unpack_bitarrays_to_uint64(output_bitarrays)
+
+    output_image = outputs_to_pixie_image(
+      output_unpacked,
+      height = height,
+      width = width,
+      channels = channels
+      )
+
+    let rmse = calculate_rmse(input_image, output_image)
+
+    if rmse < global_best_rmse:
+      global_best_rmse = rmse
+      global_best_image = output_image
+
+      echo &"RMSE: {global_best_rmse:.4f}. Step {step:06}. Round {round:04}. Mutation type: {mutation_type}."
+
+      output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
+      output_image.write_file("outputs/latest.png")
+      timelapse_count += 1
+
+    elif rmse == global_best_rmse:
+      discard
+
+    else:
+      case mutation_type
+        # of mt_INPUT:
+        #   undo_input_mutation(mutated_gate, graph)
+        of mt_FUNCTION:
+          undo_function_mutation(mutated_gate)
+
+    if step mod 100 == 0:
+      echo &"Step {step:06}. Round {round:04}."
