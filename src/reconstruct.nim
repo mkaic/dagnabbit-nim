@@ -1,5 +1,4 @@
 import ./gate_dag
-import ./gate_funcs
 import ./image_utils
 import ./bitty
 
@@ -32,7 +31,7 @@ echo "Number of gates: ", num_gates
 input_image = input_image.resize(width, height)
 input_image.write_file("outputs/original.png")
 
-var graph = Graph(num_gates: num_gates)
+var graph = Graph(total_nodes: address_bitcount + num_gates + output_bitcount)
 
 for i in 0 ..< address_bitcount:
   graph.add_input()
@@ -41,9 +40,10 @@ for i in 0 ..< output_bitcount:
   graph.add_output()
 
 for i in 0 ..< num_gates:
+  echo "Adding gate ", i
   graph.add_random_gate()
 
-graph.sort_gates(mode=sm_FORWARD)
+graph.sort_gates()
 
 let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   height = height,
@@ -73,7 +73,7 @@ for i in 0..100_000:
   else:
     mutated_gate = graph.gates[gate_idx]
 
-  let mutation_type = MutationType(i mod 2)
+  let mutation_type = MutationType(i mod (MutationType.high.int + 1))
 
   case mutation_type
     of mt_INPUT:
@@ -81,7 +81,6 @@ for i in 0..100_000:
     of mt_FUNCTION:
       stage_function_mutation(mutated_gate)
   
-  var local_best_rmse = 255'f32
   var output_image: pix.Image
 
   let output_bitarrays: seq[BitArray] = graph.eval(input_bitarrays)
@@ -97,19 +96,21 @@ for i in 0..100_000:
   let rmse = calculate_rmse(input_image, output_image)
 
   if rmse < global_best_rmse:
-    global_best_rmse = local_best_rmse
+    global_best_rmse = rmse
     global_best_image = output_image
 
-    echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}. Gate: {mutated_gate.id:05d}. Function: {mutated_gate.function}."
+    echo &"RMSE: {global_best_rmse:.4f}. Step {i:06}. Round {round:04}. Mutation type: {mutation_type}."
 
     output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
     output_image.write_file("outputs/latest.png")
     timelapse_count += 1
+
   elif rmse == global_best_rmse:
     discard
+
   else:
     case mutation_type
       of mt_INPUT:
-        undo_input_mutation(mutated_gate)
+        undo_input_mutation(mutated_gate, graph)
       of mt_FUNCTION:
         undo_function_mutation(mutated_gate)

@@ -7,6 +7,7 @@ import std/sequtils
 import std/strformat
 import std/tables
 import std/hashes
+import std/algorithm
 
 randomize()
 
@@ -32,12 +33,9 @@ type
   Graph* = object
     inputs*: seq[GateRef]
     gates*: seq[GateRef]
-    num_gates*: int
+    total_nodes*: int
     outputs*: seq[GateRef]
     id_autoincrement*: int = 0
-
-proc hash(gate: GateRef): Hash =
-  return hash(gate.id)
 
 proc all_nodes*(graph: Graph): seq[GateRef] =
   return graph.inputs & graph.gates & graph.outputs
@@ -83,18 +81,13 @@ proc eval*(graph: var Graph, bitpacked_inputs: seq[BitArray]): seq[BitArray] =
 
   return output
 
-type SortMode* = enum sm_FORWARD, sm_BACKWARD
-proc kahn_topo_sort*(nodes: seq[GateRef], mode: SortMode): seq[GateRef]=
+proc kahn_topo_sort*(nodes: seq[GateRef]): seq[GateRef]=
   var incoming_edges: Table[int, int]
   var pending: seq[GateRef] = newSeq[GateRef]()
   var sorted: seq[GateRef] = newSeq[GateRef]()
 
   for g in nodes:
-    case mode
-      of sm_FORWARD:
-        incoming_edges[g.id] = g.inputs.deduplicate().len
-      of sm_BACKWARD:
-        incoming_edges[g.id] = g.outputs.deduplicate().len
+    incoming_edges[g.id] = g.inputs.deduplicate().len
 
     if incoming_edges[g.id] == 0:
       pending.add(g)
@@ -104,15 +97,8 @@ proc kahn_topo_sort*(nodes: seq[GateRef], mode: SortMode): seq[GateRef]=
     let next_gate = pending[0]
     pending.del(0)
     sorted.add(next_gate)
-    
-    var outgoing_edges: seq[GateRef]
-    case mode
-      of sm_FORWARD:
-        outgoing_edges = next_gate.outputs.deduplicate()
-      of sm_BACKWARD:
-        outgoing_edges = next_gate.inputs.deduplicate()
 
-    for o in outgoing_edges:
+    for o in next_gate.outputs.deduplicate():
       incoming_edges[o.id] -= 1
       if incoming_edges[o.id] == 0:
         pending.add(o)
@@ -128,44 +114,45 @@ proc kahn_topo_sort*(nodes: seq[GateRef], mode: SortMode): seq[GateRef]=
 
   return sorted
 
-proc sort_gates*(graph: var Graph, mode: SortMode) =
-  let sorted = kahn_topo_sort(graph.all_nodes(), mode)
+proc refresh_descendants(gate: GateRef) =
+  var descendants = newBitArray(gate.descendants.len)
+  descendants.clear()
+  descendants.unsafeSetTrue(gate.id)
+
+  for o in gate.outputs:
+    descendants = descendants or o.descendants
+
+  # a mapping from every gate's ID in the graph to a bool for whether it's a descendant of the query gate.
+  gate.descendants = descendants
+
+proc refresh_descendants_until(graph: var Graph, gate: GateRef) =
+  let sorted = kahn_topo_sort(graph.all_nodes()).reversed()
+  for g in sorted:
+    g.refresh_descendants()
+    if g == gate: break
+
+proc sort_gates*(graph: var Graph) =
+  let sorted = kahn_topo_sort(graph.all_nodes())
   graph.gates = collect:
     for g in sorted:
       if g in graph.gates: g
 
-proc add_input*(graph: var Graph) =
-  graph.inputs.add(GateRef(id: graph.id_autoincrement))
+proc create_node*(graph: var Graph): GateRef =
+  var node = GateRef(id: graph.id_autoincrement, descendants: newBitArray(graph.total_nodes))
   graph.id_autoincrement += 1
+  return node
+
+proc add_input*(graph: var Graph) =
+  var input = graph.create_node()
+  graph.inputs.add(input)
 
 proc add_output*(graph: var Graph) =
-  var output = GateRef(id: graph.id_autoincrement)
-  graph.id_autoincrement += 1
+  var output = graph.create_node()
 
   for i in 0..1:
     connect(sample(graph.inputs), output)
 
-  graph.outputs.add(output)
-
-
-proc update_descendants*(graph: var Graph) =
-
-  let topo_sorted_backward = kahn_topo_sort(graph.all_nodes(), sm_BACKWARD)
-
-  for g in topo_sorted_backward:
-    var descendants = newBitArray(graph.inputs.len + graph.num_gates + graph.outputs.len)
-    descendants.clear()
-
-    # gate is counted as one of its own descendants
-    # since connecting to itself would create a cycle
-    descendants.unsafeSetTrue(g.id)
-
-    for o in g.outputs:
-      descendants = descendants or o.descendants
-
-    # a mapping from every gate's ID in the graph to a bool for whether it's a descendant of the query gate.
-    g.descendants = descendants
-  
+  graph.outputs.add(output)  
   
 proc add_random_gate*(graph: var Graph, output:bool = false) =
   # non-wastefully adds gate by splitting an existing edge, ensuring that all gates "do something"
@@ -182,15 +169,14 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
 
   var split_input_gate = sample(split_output_gate.inputs)
 
-  var new_gate= GateRef(id: graph.id_autoincrement)
-  graph.id_autoincrement += 1
+  var new_gate = graph.create_node()
   graph.gates.add(new_gate)
 
   disconnect(split_input_gate, split_output_gate)
   connect(split_input_gate, new_gate)
   connect(new_gate, split_output_gate)
-
-  graph.update_descendants()
+  
+  graph.refresh_descendants_until(new_gate)
 
   let valid_gate_inputs = collect:
     for g in graph.gates:
@@ -214,7 +200,7 @@ proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
 
 proc stage_function_mutation*(gate: GateRef) =
   gate.function_cache = gate.function
-  let available_functions = collect(newSeq):
+  let available_functions = collect:
     for f in GateFunc.low .. GateFunc.high:
       if f != gate.function: f
   gate.function = sample(available_functions)
@@ -226,6 +212,8 @@ proc stage_input_mutation*(gate: GateRef, graph: var Graph) =
   gate.inputs_cache = gate.inputs
 
   for i in 0..1:
+    graph.refresh_descendants_until(gate)
+
     let valid_inputs = collect:
       for g in graph.gates:
         if not gate.descendants[g.id]: g
@@ -236,11 +224,11 @@ proc stage_input_mutation*(gate: GateRef, graph: var Graph) =
     disconnect(gate.inputs[i], gate)
     connect(new_input_gate, gate)
 
-    graph.sort_gates(sm_FORWARD)
+  graph.sort_gates()
 
 proc undo_input_mutation*(gate: GateRef, graph: var Graph) =
   for i in 0..1:
     disconnect(gate.inputs[i], gate)
     connect(gate.inputs_cache[i], gate)
 
-  graph.sort_gates(sm_FORWARD)
+  graph.sort_gates()
