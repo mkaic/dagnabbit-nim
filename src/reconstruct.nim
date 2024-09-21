@@ -1,29 +1,20 @@
+import ./config
 import ./gate_dag
 import ./image_utils
-import ./bitty
+import ./bitarrays
 
 import pixie as pix
 
 import std/strformat
-import std/sequtils
 import std/math
-import std/bitops
+
 import std/strutils
 import std/random
 # import std/nimprof
 
 randomize()
 
-var input_image = pix.read_image("test_images/branos.png")
-
-const
-  width = 64
-  height = 64
-  channels = 3
-  output_bitcount = 8
-  num_gates = 256
-  rounds = 1024
-  address_bitcount = fast_log2(width * height * channels) + 1
+var input_image = pix.read_image(config.image_path)
 
 echo "Total number of addresses: ", width * height * channels
 echo "Address bitcount: ", address_bitcount
@@ -34,16 +25,6 @@ input_image.write_file("outputs/original.png")
 
 var graph = Graph(total_nodes: address_bitcount + num_gates + output_bitcount)
 
-for i in 0 ..< address_bitcount:
-  graph.add_input()
-
-for i in 0 ..< output_bitcount:
-  graph.add_output()
-
-for i in 0 ..< num_gates:
-  graph.add_random_gate()
-
-graph.sort_gates()
 
 let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
   height = height,

@@ -1,6 +1,8 @@
 # import std/sequtils
+import ./config 
 import ./gate_funcs
-import ./bitty
+import ./bitarrays
+
 import std/sugar
 import std/random
 import std/sequtils
@@ -12,30 +14,30 @@ import std/algorithm
 randomize()
 
 type
-  GateRef* {.acyclic.} = ref object
-    id*: int
+  NodeID = distinct int
+  Node = object
+    id: NodeID
+    inputs: array[2, NodeID]
 
-    inputs*: seq[GateRef]
-    inputs_cache*: seq[GateRef]
-
-    function*: GateFunc = gf_NAND
-    function_cache*: GateFunc
+    function: GateFunc = gf_NAND
 
     # of length num_addresses
-    value*: BitArray
-    evaluated*: bool
-
-    outputs*: seq[GateRef]
+    value: BitArray
+    evaluated: bool
 
     # of length num_gates
-    descendants*: BitArray
+    descendants: BitArray
 
-  Graph* = object
-    inputs*: seq[GateRef]
-    gates*: seq[GateRef]
-    total_nodes*: int
-    outputs*: seq[GateRef]
-    id_autoincrement*: int = 0
+  Graph = object
+    inputs: array[address_bitcount, NodeID]
+    outputs: array[output_bitcount, NodeID]
+
+    nodes: array[num_gates, Node]
+    evaluated: BitArray
+
+    execution_order: array[num_gates, NodeID]
+
+    id_autoincrement: int = 0
 
 proc all_nodes*(graph: Graph): seq[GateRef] =
   return graph.inputs & graph.gates & graph.outputs
@@ -187,17 +189,22 @@ proc add_random_gate*(graph: var Graph, output:bool = false) =
 
   connect(sample(all_valid_inputs), new_gate)
 
-proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
-  # seq(8)[BitArray] --> seq(num_addresses)[uint64]
-  var unpacked: seq[uint64] = newSeq[uint64](packed[0].len)
-  for idx in 0 ..< packed[0].len:
-    var as_uint64 = 0.uint64
-    for bit_idx in 0 ..< packed.len:
-      if packed[bit_idx].unsafeGet(idx):
-        as_uint64 = as_uint64 or (1.uint64 shl bit_idx)
-    unpacked[idx] = as_uint64
 
-  return unpacked
+proc new_graph_from_config(): Graph =
+  var graph = Graph()
+
+  for i in 0 ..< address_bitcount:
+    graph.add_input()
+
+  for i in 0 ..< output_bitcount:
+    graph.add_output()
+
+  for i in 0 ..< num_gates:
+    graph.add_random_gate()
+
+  graph.sort_gates()
+
+  return graph
 
 proc stage_function_mutation*(gate: GateRef) =
   gate.function_cache = gate.function

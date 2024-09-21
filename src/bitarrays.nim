@@ -15,7 +15,7 @@ import hashes, bitops
 
 type BitArray* = ref object
   ## Creates an array of bits all packed in together.
-  bits: seq[uint64]
+  bits: openArray[uint64]
   len*: int
 
 func divUp(a, b: int): int =
@@ -186,4 +186,14 @@ iterator pairs*(b: BitArray): (int, bool) =
   for i in 0 ..< b.len:
     yield (i, b.unsafeGet(i))
 
-# I (mkaic) have removed BitArray2d from this file, as it isn't necessary for my project.
+proc unpack_bitarrays_to_uint64*(packed: seq[BitArray]): seq[uint64] =
+  # seq(8)[BitArray] --> seq(num_addresses)[uint64]
+  var unpacked: seq[uint64] = newSeq[uint64](packed[0].len)
+  for idx in 0 ..< packed[0].len:
+    var as_uint64 = 0.uint64
+    for bit_idx in 0 ..< packed.len:
+      if packed[bit_idx].unsafeGet(idx):
+        as_uint64 = as_uint64 or (1.uint64 shl bit_idx)
+    unpacked[idx] = as_uint64
+
+  return unpacked

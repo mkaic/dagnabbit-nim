@@ -1,5 +1,5 @@
 import pixie as pix
-import ./bitty
+import ./bitarrays
 import std/bitops
 
 proc make_bitpacked_addresses*(
