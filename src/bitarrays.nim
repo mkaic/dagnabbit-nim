@@ -13,21 +13,23 @@
 
 import hashes, bitops
 
-type BitArray* = ref object
-  ## Creates an array of bits all packed in together.
-  bits: openArray[uint64]
-  len*: int
-
 func divUp(a, b: int): int =
   ## Like div, but rounds up instead of down.
   let extra = if a mod b > 0: 1 else: 0
   return a div b + extra
 
-func newBitArray*(len: int = 0): BitArray =
+type BitArray*[L: static int] = ref object
+  ## Creates an array of bits all packed in together.
+  bits: array[L.divUp(64), uint64]
+  len: int
+  
+
+func newBitArray*(len: static int): BitArray =
   ## Create a new bit array.
-  result = BitArray()
-  result.len = len
-  result.bits = newSeq[uint64](len.divUp(64))
+  result = BitArray(
+    bits: array[uint64](len.divUp(64)),
+    len: len
+  )
 
 func setLen*(b: BitArray, len: int) =
   ## Sets the length.
