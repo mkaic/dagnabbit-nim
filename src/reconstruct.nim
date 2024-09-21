@@ -92,7 +92,7 @@ for round in 0 ..< 100:
     if rmse < global_best_rmse:
       global_best_rmse = rmse
       global_best_image = output_image
-      echo &"RMSE: {global_best_rmse:.4f}. Step {step:06}. Round {round:04}. Mutation type: {mutation_type}."
+      echo &"RMSE: {global_best_rmse:.4f}. Step {step:06}. Round {round:04}. Last saved at {last_saved_at:.4f}."
 
     elif rmse == global_best_rmse:
       discard
@@ -109,7 +109,7 @@ for round in 0 ..< 100:
       output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
       output_image.write_file("outputs/latest.png")
       timelapse_count += 1
-      echo &"Saved timelapse image."
+      # echo &"Saved timelapse image."
 
-    if step mod 100 == 0:
-      echo &"Step {step:06}. Round {round:04}."
+    # if step mod 100 == 0:
+    #   echo &"Step {step:06}. Round {round:04}."
