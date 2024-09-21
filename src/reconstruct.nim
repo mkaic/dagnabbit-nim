@@ -21,7 +21,8 @@ const
   height = 64
   channels = 3
   output_bitcount = 8
-  num_gates = 8192
+  num_gates = 256
+  rounds = 1024
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -59,7 +60,7 @@ type MutationType = enum
   # mt_INPUT, 
   mt_FUNCTION
 
-for round in 0 ..< 100:
+for round in 0 ..< rounds:
 
   var permutation = graph.gates & graph.outputs
   permutation.shuffle()
