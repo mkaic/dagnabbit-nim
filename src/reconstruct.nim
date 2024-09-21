@@ -17,11 +17,11 @@ randomize()
 var input_image = pix.read_image("test_images/branos.png")
 
 const
-  width = 256
-  height = 256
+  width = 64
+  height = 64
   channels = 3
   output_bitcount = 8
-  num_gates = 4096
+  num_gates = 8192
   address_bitcount = fast_log2(width * height * channels) + 1
 
 echo "Total number of addresses: ", width * height * channels
@@ -53,6 +53,7 @@ let input_bitarrays: seq[BitArray] = make_bitpacked_addresses(
 var global_best_rmse = 255'f32
 var global_best_image: pix.Image
 var timelapse_count = 0
+var last_saved_at = global_best_rmse
 
 type MutationType = enum 
   # mt_INPUT, 
@@ -91,12 +92,7 @@ for round in 0 ..< 100:
     if rmse < global_best_rmse:
       global_best_rmse = rmse
       global_best_image = output_image
-
       echo &"RMSE: {global_best_rmse:.4f}. Step {step:06}. Round {round:04}. Mutation type: {mutation_type}."
-
-      output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
-      output_image.write_file("outputs/latest.png")
-      timelapse_count += 1
 
     elif rmse == global_best_rmse:
       discard
@@ -107,6 +103,13 @@ for round in 0 ..< 100:
         #   undo_input_mutation(mutated_gate, graph)
         of mt_FUNCTION:
           undo_function_mutation(mutated_gate)
+
+    if rmse < (last_saved_at * 0.99):
+      last_saved_at = rmse
+      output_image.write_file(&"outputs/timelapse/{timelapse_count:06}.png")
+      output_image.write_file("outputs/latest.png")
+      timelapse_count += 1
+      echo &"Saved timelapse image."
 
     if step mod 100 == 0:
       echo &"Step {step:06}. Round {round:04}."
