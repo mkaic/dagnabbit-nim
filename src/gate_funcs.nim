@@ -1,7 +1,7 @@
-import bitty
+import ./bitarrays
 
 type
-  GateFunc* = enum
+  GateFunction* = enum
     gf_AND,
     gf_A_AND_NOT_B,
     gf_NOT_A_AND_B,
@@ -19,7 +19,7 @@ type
     # gf_ZERO,
     # gf_ONE
 
-proc eval*(gf: GateFunc, a, b: BitArray): BitArray =
+proc eval*(gf: GateFunction, a, b: BitArray): BitArray =
   # inputs is seq(2)[seq(num_batches)[int64]]
   case gf
     of gf_AND:

@@ -23,13 +23,9 @@ type BitArray*[L: static int] = ref object
   bits: array[L.divUp(64), uint64]
   len: int
   
-
-func newBitArray*(len: static int): BitArray =
+func newBitArray*(len: static int): BitArray[len] =
   ## Create a new bit array.
-  result = BitArray(
-    bits: array[uint64](len.divUp(64)),
-    len: len
-  )
+  return BitArray[len](len: len)
 
 func setLen*(b: BitArray, len: int) =
   ## Sets the length.

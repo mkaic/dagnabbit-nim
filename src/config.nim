@@ -10,4 +10,5 @@ const
 const
   output_bitcount* = 8
   channels* = 3
-  address_bitcount* = fast_log2(width * height * channels) + 1
+  num_addresses* = width * height * channels
+  address_bitcount* = fast_log2(num_addresses) + 1
