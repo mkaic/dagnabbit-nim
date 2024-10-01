@@ -13,26 +13,30 @@ randomize()
 
 type
   GateID = distinct int
+  GateInput = enum gi_A, gi_B
   Gate[value_size, gate_count: static int] = object
     id: GateID
     inputs: array[2, GateID]
+    outputs: seq[GateID]
     function: GateFunction = gf_NAND
     value: BitArray[value_size]
     descendants: BitArray[gate_count]
 
-  ComputeGraph[input_count, output_count, gate_count, value_size, : static int] = object
+  ComputeGraph[input_count, output_count, gate_count, value_size : static int] = object
+    nodes: array[input_count + gate_count + output_count, Gate[value_size, gate_count]]
+    order: array[input_count + gate_count + output_count, GateID]
+
     inputs: array[input_count, GateID]
+    intermediates: array[gate_count, GateID]
     outputs: array[output_count, GateID]
-    nodes: array[gate_count, Gate]
-    order: array[gate_count, GateID]
 
     id_autoincrement: int = 0
 
-proc connect*(new_input, gate: Gate) =
-  gate.inputs.add(new_input)
+proc connect*(output_from, to_gate: GateID, at_input: GateInput) =
+  discard
 
-proc disconnect*(old_input, gate: Gate) =
-  gate.inputs.del(gate.inputs.find(old_input))
+proc disconnect*(output_from, to_gate: GateID, at_input: GateInput) =
+  discard
 
 proc eval(gate: Gate) =
   if not gate.evaluated:
@@ -117,12 +121,6 @@ proc refresh_descendants_until(graph: var ComputeGraph, gate: Gate) =
     g.refresh_descendants()
     if g == gate: break
 
-proc sort_gates*(graph: var ComputeGraph) =
-  let sorted = kahn_topo_sort(graph.all_nodes())
-  graph.gates = collect:
-    for g in sorted:
-      if g in graph.gates: g
-
 proc create_node*(graph: var ComputeGraph): Gate =
   var node = Gate(id: graph.id_autoincrement, descendants: newBitArray(graph.total_nodes))
   graph.id_autoincrement += 1
@@ -174,17 +172,19 @@ proc add_random_gate*(graph: var ComputeGraph, output:bool = false) =
   connect(sample(all_valid_inputs), new_gate)
 
 
-proc new_graph_from_config(): ComputeGraph =
-  var Computegraph = ComputeGraph()
+proc new_graph(input_count, output_count, gate_count, value_size: static int): 
+  ComputeGraph[input_count, output_count, gate_count, value_size] =
 
-  for i in 0 ..< address_bitcount:
-    graph.init_input()
+  var graph = ComputeGraph[input_count, output_count, gate_count, value_size]()
 
-  for i in 0 ..< output_bitcount:
-    graph.init_output()
+  for input_id in graph.inputs:
+    init_input(input_id)
 
-  for i in 0 ..< num_gates:
-    graph.init_gate()
+  for output_id in graph.outputs:
+    init_output(output_id)
+
+  for gate_id in graph.gates:
+    init_gate(gate_id)
 
   graph.sort_gates()
 
@@ -199,28 +199,3 @@ proc stage_function_mutation*(gate: Gate) =
 
 proc undo_function_mutation*(gate: Gate) =
   gate.function = gate.function_cache
-
-proc stage_input_mutation*(gate: Gate, graph: var ComputeGraph) =
-  gate.inputs_cache = gate.inputs
-
-  let random_input_choice  = rand(0..1)
-  graph.refresh_descendants_until(gate)
-
-  let valid_inputs = collect:
-    for g in graph.gates:
-      if not gate.descendants[g.id]: g
-
-  let all_valid_inputs = graph.inputs & valid_inputs
-  var new_input_gate = sample(all_valid_inputs)
-
-  disconnect(gate.inputs[random_input_choice], gate)
-  connect(new_input_gate, gate)
-
-  graph.sort_gates()
-
-proc undo_input_mutation*(gate: Gate, graph: var ComputeGraph) =
-  for i in 0..1:
-    disconnect(gate.inputs[i], gate)
-    connect(gate.inputs_cache[i], gate)
-
-  graph.sort_gates()
